@@ -1,0 +1,121 @@
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(7, 40, 32, 0.45);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+
+.modal {
+  width: min(440px, 100%);
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(26, 46, 40, 0.08);
+}
+
+.modal__header h2 {
+  margin: 0;
+  font-size: 16px;
+  color: var(--brand);
+}
+
+.modal__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-muted);
+}
+
+.modal__close:hover {
+  background: var(--surface-muted);
+}
+
+.modal__body {
+  padding: 18px;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.modal-form input,
+.modal-form textarea {
+  border: 1px solid rgba(26, 46, 40, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.modal-form textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.modal-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.modal-form__actions button {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.modal-form__actions .is-ghost {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.modal-form__actions .is-primary {
+  background: var(--brand);
+  color: #fff;
+}
+
+.modal-form__actions .is-danger {
+  background: #b33a3a;
+  color: #fff;
+}
+
+.modal-form__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.modal-form__error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(179, 58, 58, 0.12);
+  color: #8f2a2a;
+  font-size: 13px;
+}

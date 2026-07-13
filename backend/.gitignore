@@ -1,0 +1,13 @@
+# Dependencies & env
+node_modules/
+.env
+.env.*
+!.env.example
+
+# OS / logs
+.DS_Store
+*.log
+
+# Local uploads (tracked via root .gitkeep rule)
+uploads/**
+!uploads/.gitkeep

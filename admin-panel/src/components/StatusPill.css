@@ -1,0 +1,39 @@
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  background: var(--brand-mist);
+  color: var(--brand);
+}
+
+.status-pill--pending {
+  background: rgba(201, 162, 39, 0.16);
+  color: #8a6d12;
+}
+
+.status-pill--documents_required {
+  background: rgba(196, 122, 44, 0.16);
+  color: #8a4f14;
+}
+
+.status-pill--sent_to_embassy,
+.status-pill--under_embassy_review {
+  background: rgba(42, 111, 143, 0.14);
+  color: #1d5670;
+}
+
+.status-pill--approved,
+.status-pill--visa_issued {
+  background: rgba(26, 122, 76, 0.14);
+  color: #0f5c38;
+}
+
+.status-pill--rejected {
+  background: rgba(179, 58, 58, 0.12);
+  color: #8f2a2a;
+}

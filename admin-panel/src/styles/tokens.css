@@ -1,0 +1,45 @@
+:root {
+  /* Canvas & surfaces — PRD Option C + design reference */
+  --bg-canvas: #f0ebe3;
+  --bg-canvas-deep: #e8e1d6;
+  --surface: #ffffff;
+  --surface-muted: #f7f5f1;
+
+  /* Ink */
+  --ink: #1a2e28;
+  --ink-muted: #6b7c75;
+  --ink-faint: #9aa8a2;
+
+  /* Brand — deep teal / navy structure */
+  --brand: #0b3d2e;
+  --brand-deep: #072820;
+  --brand-soft: #1a5c45;
+  --brand-mist: rgba(11, 61, 46, 0.08);
+
+  /* Accent — mustard / gold (actions + selection) */
+  --accent: #e8b84a;
+  --accent-hover: #d9a73a;
+  --accent-soft: rgba(232, 184, 74, 0.28);
+  --accent-row: #f5e6b8;
+
+  /* Status (for pills) */
+  --status-pending: #c9a227;
+  --status-docs: #c47a2c;
+  --status-embassy: #2a6f8f;
+  --status-approved: #1a7a4c;
+  --status-rejected: #b33a3a;
+  --status-issued: #0b3d2e;
+
+  /* Geometry */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-card: 0 18px 50px rgba(26, 46, 40, 0.08), 0 4px 14px rgba(26, 46, 40, 0.04);
+  --shadow-soft: 0 2px 8px rgba(26, 46, 40, 0.05);
+
+  /* Layout */
+  --sidebar-width: 232px;
+  --shell-pad: 28px;
+  --font: 'DM Sans', system-ui, sans-serif;
+}
