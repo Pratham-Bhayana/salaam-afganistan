@@ -197,6 +197,7 @@ router.get('/embassies', requireAnyPermission(PERMISSIONS.EMBASSY_SETUP, PERMISS
 router.get('/embassies/:id', requireAnyPermission(PERMISSIONS.EMBASSY_SETUP, PERMISSIONS.APPLICATIONS_READ), embassyController.getById);
 router.post('/embassies', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.create);
 router.patch('/embassies/:id', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.update);
+router.delete('/embassies/:id', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.remove);
 router.get(
   '/embassies/:id/applications',
   requireAnyPermission(PERMISSIONS.EMBASSY_SETUP, PERMISSIONS.APPLICATIONS_READ),

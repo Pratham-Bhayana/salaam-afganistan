@@ -4,7 +4,7 @@ import './AdminShell.css';
 
 export function AdminShell() {
   const { pathname } = useLocation();
-  const isApplicationDetail = /^\/applications\/[^/]+$/.test(pathname);
+  const isDetailView = /^\/applications\/[^/]+$/.test(pathname);
 
   return (
     <div className="admin-shell">
@@ -15,7 +15,7 @@ export function AdminShell() {
         <Sidebar />
         <main className="admin-shell__main">
           <div
-            className={`admin-shell__card${isApplicationDetail ? ' admin-shell__card--detail' : ''}`}
+            className={`admin-shell__card${isDetailView ? ' admin-shell__card--detail' : ''}`}
           >
             <Outlet />
           </div>

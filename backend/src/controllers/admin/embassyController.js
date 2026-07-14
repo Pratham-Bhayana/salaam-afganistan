@@ -120,10 +120,31 @@ const applicationsForEmbassy = asyncHandler(async (req, res) => {
   return success(res, data, { page, limit, total, pages: Math.ceil(total / limit) });
 });
 
+const remove = asyncHandler(async (req, res) => {
+  const embassy = await Embassy.findById(req.params.id);
+  if (!embassy) throw new ApiError(404, 'Embassy not found');
+  if (embassy.isActive) {
+    throw new ApiError(400, 'Only inactive embassies can be deleted');
+  }
+
+  const before = embassy.toObject();
+  await Embassy.deleteOne({ _id: embassy._id });
+
+  await auditFromReq(req, {
+    action: 'embassy.delete',
+    resourceType: 'Embassy',
+    resourceId: embassy._id,
+    before,
+  });
+
+  return success(res, { deleted: true, id: embassy._id });
+});
+
 module.exports = {
   list,
   getById,
   create,
   update,
+  remove,
   applicationsForEmbassy,
 };

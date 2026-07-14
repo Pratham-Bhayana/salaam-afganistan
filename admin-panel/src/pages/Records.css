@@ -1,0 +1,12 @@
+@import './Applications.css';
+
+.records-table__actions-col {
+  width: 96px;
+}
+
+.records-table__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
