@@ -6,13 +6,20 @@ const {
   getEmbassyPermissionsForRole,
 } = require('../config/embassyPermissions');
 
+function resolveEmbassyId(embassyStaff) {
+  const embassy = embassyStaff.embassy;
+  if (!embassy) return undefined;
+  if (typeof embassy === 'object' && embassy._id) return embassy._id.toString();
+  return embassy.toString();
+}
+
 function signEmbassyAccessToken(embassyStaff) {
   return jwt.sign(
     {
       sub: embassyStaff._id.toString(),
       role: embassyStaff.role,
       email: embassyStaff.email,
-      embassyId: embassyStaff.embassy.toString(),
+      embassyId: resolveEmbassyId(embassyStaff),
       panel: 'embassy',
       typ: 'access',
     },
@@ -26,7 +33,7 @@ function signEmbassyRefreshToken(embassyStaff, jti) {
     {
       sub: embassyStaff._id.toString(),
       role: embassyStaff.role,
-      embassyId: embassyStaff.embassy.toString(),
+      embassyId: resolveEmbassyId(embassyStaff),
       panel: 'embassy',
       typ: 'refresh',
       jti,

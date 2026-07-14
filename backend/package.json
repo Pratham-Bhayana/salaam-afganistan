@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "seed": "node seed/seed.js",
     "seed:local": "node seed/seed.js",
-    "seed:fresh": "node seed/seed.js --fresh"
+    "seed:fresh": "node seed/seed.js --fresh",
+    "seed:application": "node seed/seedApplication.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -120,6 +120,13 @@ router.post(
   chatController.sendMessage
 );
 
+// ─── Dashboard (live KPIs for all embassy staff) ─────────────────────────────
+router.get(
+  '/dashboard',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_READ),
+  reportsController.dashboard
+);
+
 // ─── Reports (9.4) ───────────────────────────────────────────────────────────
 router.get(
   '/reports',

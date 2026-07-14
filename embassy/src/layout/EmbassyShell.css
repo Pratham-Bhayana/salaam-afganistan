@@ -65,7 +65,8 @@
   background: var(--surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-card);
-  padding: 28px 32px 20px;
+  /* was 28px 32px 20px — hardcoded 20px bottom pad floated Chat/Apps off the card edge */
+  padding: 28px 32px 0;
   overflow: hidden;
 }
 
@@ -84,7 +85,7 @@
   }
 
   .embassy-shell__card {
-    padding: 20px 16px 16px;
+    padding: 20px 16px 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 
