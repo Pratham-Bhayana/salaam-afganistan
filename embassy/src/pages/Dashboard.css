@@ -1,0 +1,105 @@
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-height: 0;
+  height: 100%;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.dashboard__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dashboard__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+}
+
+.dashboard__subtitle {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.dashboard__error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(214, 69, 69, 0.12);
+  color: #9a2b2b;
+  font-size: 13px;
+}
+
+.dashboard__loading,
+.dashboard__empty {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}
+
+.dashboard__empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  min-height: 180px;
+}
+
+.dashboard__period {
+  height: 40px;
+  padding: 0 32px 0 14px;
+  border: 1px solid rgba(128, 97, 217, 0.14);
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b6b7b' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 12px center;
+  appearance: none;
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 500;
+  min-width: 140px;
+}
+
+.dashboard__stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard__grid {
+  display: grid;
+  gap: 14px;
+}
+
+.dashboard__grid--primary {
+  grid-template-columns: 1.6fr 1fr;
+}
+
+.dashboard__grid--secondary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 1200px) {
+  .dashboard__stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard__grid--primary,
+  .dashboard__grid--secondary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dashboard__stats {
+    grid-template-columns: 1fr;
+  }
+}

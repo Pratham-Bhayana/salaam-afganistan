@@ -1,0 +1,22 @@
+.applications {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0;
+  min-height: 0;
+  height: 100%;
+}
+
+.applications__error {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(214, 69, 69, 0.12);
+  color: #9a2b2b;
+  font-size: 13px;
+}
+
+.applications__loading {
+  margin: 0 0 12px;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}

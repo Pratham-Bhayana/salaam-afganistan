@@ -1,0 +1,55 @@
+:root {
+  /* Bloggr-inspired embassy palette */
+  --bg-canvas: #f3f3ff;
+  --bg-canvas-deep: #e6e6f8;
+  --surface: #ffffff;
+  --surface-muted: #f7f7ff;
+
+  /* Ink */
+  --ink: #16161f;
+  --ink-muted: #6b6b7b;
+  --ink-faint: #9a9aab;
+
+  /* Brand — near-black / ink navy */
+  --brand: #16161f;
+  --brand-deep: #0c0c12;
+  --brand-soft: #2a2a38;
+  --brand-mist: rgba(128, 97, 217, 0.1);
+
+  /* Primary accent — vibrant purple */
+  --purple: #8061d9;
+  --purple-hover: #6f52c7;
+  --purple-soft: rgba(128, 97, 217, 0.16);
+
+  /* Secondary accent — warm yellow */
+  --accent: #ffba38;
+  --accent-hover: #f0a820;
+  --accent-soft: rgba(255, 186, 56, 0.28);
+  --accent-row: #fff3d6;
+
+  /* Legacy aliases used in components */
+  --lagoon: #8061d9;
+  --lagoon-soft: rgba(128, 97, 217, 0.14);
+
+  /* Status */
+  --status-pending: #ffba38;
+  --status-docs: #e8913a;
+  --status-embassy: #8061d9;
+  --status-approved: #2f9e6b;
+  --status-rejected: #d64545;
+  --status-issued: #16161f;
+
+  /* Geometry — softer, Bloggr-like */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --shadow-card: 0 18px 50px rgba(22, 22, 31, 0.08), 0 4px 14px rgba(128, 97, 217, 0.06);
+  --shadow-soft: 0 2px 10px rgba(22, 22, 31, 0.05);
+
+  /* Layout */
+  --sidebar-width: 232px;
+  --shell-pad: 28px;
+  --font: 'Red Hat Display', system-ui, sans-serif;
+  --font-display: 'Red Hat Display', system-ui, sans-serif;
+}
