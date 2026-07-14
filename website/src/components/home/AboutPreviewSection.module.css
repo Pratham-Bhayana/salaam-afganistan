@@ -1,0 +1,125 @@
+.section {
+  background: var(--color-gray-100);
+  margin: 0 0.75rem;
+  border-radius: var(--radius);
+}
+
+.grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.logoWrap {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.logoBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--color-white);
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+  line-height: 0;
+  border: 1px solid var(--color-gray-200);
+}
+
+.logo {
+  display: block;
+  height: 48px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.logoText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.logoText strong {
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-black);
+}
+
+.logoText span {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gray-600);
+}
+
+.imageWrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.building {
+  width: 100%;
+  border-radius: 2rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.sparkle {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+.sparkleDark {
+  top: -8px;
+  right: 12px;
+  background: var(--color-black);
+}
+
+.sparkleLight {
+  bottom: 10px;
+  left: -6px;
+  background: var(--color-gray-500);
+}
+
+.contentCol .section-heading p {
+  margin-top: 1rem;
+  color: var(--color-gray-600);
+  line-height: 1.75;
+}
+
+@media (min-width: 992px) {
+  .section {
+    margin: 0 1rem;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .section {
+    margin: 0 1.5rem;
+  }
+}

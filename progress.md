@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 14 July 2026 (Admin Visa Templates UI)  
+**Last updated:** 14 July 2026 (Website Home + About)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
@@ -15,12 +15,18 @@
 | Website applicant APIs (Firebase auth) | Done |
 | **Admin Panel frontend** | **Dashboard + Applications + Embassies + Chat + Settings + Audit + Visa Templates UI** |
 | **Embassy Panel frontend** | **Login + Dashboard + Applications + Chat live** |
-| Website frontend | Not started |
+| Website frontend | **Home + About scaffolded (Next.js App Router, B&W)** |
 | Live payment gateway / OCR / WebSockets | Not started |
 
 ---
 
 ## Completed (latest)
+
+### Website Home + About (UI scaffold)
+- Next.js 15 + TypeScript App Router in `website/` (reference LivMexico HTML/CSS in `website/reference/`)
+- Routes: `/` (Home), `/about` (About); shared Header/Footer; black & white theme; logo `public/logo.png`
+- Home sections: Hero apply form, Destinations carousel, Platform leadership, Opportunities + stats, About preview, Process steps, FAQ
+- About: hero, story/values, opportunities reuse, CTA — Unsplash placeholders for photography
 
 ### Admin Visa Templates (UI-only)
 - Nav item enabled (removed Soon); routes `/visa-templates`, `/visa-templates/new`, `/visa-templates/:id`
@@ -47,9 +53,9 @@ Login: `admin@salaam.local` / `ChangeMeNow!123`
 
 ## Next up
 
-1. Embassy Reports / Staff / Activity Logs  
-2. Continue admin sections (Finance, Fees & Content, …)  
-3. Website scaffold with Firebase client  
+1. Website Firebase auth + apply flow wired to `/api/v1/website`  
+2. Contact / General Information pages  
+3. Embassy Reports / Staff / Activity Logs  
 4. Visa Templates backend + real PDF generation  
 
 ---
@@ -68,3 +74,4 @@ Login: `admin@salaam.local` / `ChangeMeNow!123`
 | 14 Jul 2026 | Admin Settings + Email templates + Audit Logs |
 | 14 Jul 2026 | Admin Chat live (rooms + messages + Application Detail embassy tab) |
 | 14 Jul 2026 | Admin Visa Templates module UI (list + builder, mock data) |
+| 14 Jul 2026 | Website Home + About pages (Next.js, B&W theme) |

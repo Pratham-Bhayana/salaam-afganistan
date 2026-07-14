@@ -1,0 +1,332 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--color-white);
+  border-bottom: 1px solid var(--color-gray-200);
+}
+
+.topBar {
+  border-bottom: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  min-height: var(--header-top-h);
+}
+
+.topInner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: var(--header-top-h);
+  padding: 0.35rem 1.25rem;
+  max-width: 100%;
+}
+
+.socialNav {
+  display: none;
+  align-items: center;
+  gap: 1rem;
+}
+
+.socialLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--color-gray-700);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.socialLink:hover {
+  color: var(--color-black);
+}
+
+.socialLabel {
+  display: none;
+}
+
+.mobileTopLogo {
+  display: block;
+}
+
+.mobileTopRaizing {
+  height: 28px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.topMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-gray-700);
+  font-size: 0.8rem;
+}
+
+.metaItem {
+  display: none;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.metaText {
+  white-space: nowrap;
+}
+
+.loginBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-black);
+  color: var(--color-white);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.loginBtn:hover {
+  background: var(--color-gray-800);
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: var(--navbar-h);
+  padding: 0.45rem 1.25rem;
+}
+
+/* Raizing logo — left side */
+.brandLogos {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.raizingLogo {
+  display: block;
+  height: 38px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  object-position: left center;
+}
+
+/* Divider — only used in offcanvas now */
+.logoDivider {
+  display: block;
+  width: 1px;
+  height: 28px;
+  background: var(--color-gray-300);
+  flex-shrink: 0;
+}
+
+/* Partner logo — right side of navbar */
+.partnerLogoLink {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+  flex-shrink: 0;
+}
+
+.partnerLogo {
+  display: block;
+  height: 38px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Nav links — centered with proper spacing */
+.navList {
+  display: none;
+  align-items: center;
+  gap: 2.25rem;
+  margin: 0;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.navLink {
+  color: var(--color-gray-700);
+  font-size: 0.92rem;
+  font-weight: 500;
+  padding: 0.25rem 0;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
+
+.navLink:hover,
+.navLinkActive {
+  color: var(--color-black);
+  border-bottom-color: var(--color-black);
+}
+
+.navRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.govLabel {
+  display: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-gray-600);
+  white-space: nowrap;
+}
+
+.menuBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 10px;
+  background: var(--color-white);
+  color: var(--color-black);
+  cursor: pointer;
+}
+
+.offcanvas {
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(360px, 92vw);
+  background: var(--color-white);
+  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.15);
+  padding: 1.25rem;
+  z-index: 1100;
+  overflow-y: auto;
+}
+
+.offcanvasHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+}
+
+.offcanvasTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.offcanvasLogos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+
+.offcanvasRaizing {
+  height: 36px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+}
+
+.offcanvasPartner {
+  height: 36px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+}
+
+.offcanvasNav {
+  display: flex;
+  flex-direction: column;
+}
+
+.offcanvasLink {
+  display: block;
+  padding: 0.9rem 0;
+  border-bottom: 1px solid var(--color-gray-200);
+  font-weight: 500;
+  color: var(--color-gray-800);
+}
+
+.offcanvasLink:hover {
+  color: var(--color-black);
+}
+
+@media (min-width: 992px) {
+  .topInner {
+    padding: 0.35rem 1.75rem;
+  }
+
+  .socialNav {
+    display: flex;
+  }
+
+  .socialLabel {
+    display: inline;
+  }
+
+  .mobileTopLogo {
+    display: none;
+  }
+
+  .metaItem {
+    display: inline-flex;
+  }
+
+  .navbar {
+    padding: 0.45rem 1.75rem;
+    position: relative;
+  }
+
+  .raizingLogo {
+    height: 44px;
+    max-width: 140px;
+  }
+
+  .partnerLogo {
+    height: 44px;
+    max-width: 140px;
+  }
+
+  .navList {
+    display: flex;
+  }
+
+  .govLabel {
+    display: inline-block;
+  }
+
+  .menuBtn {
+    display: none;
+  }
+
+  .offcanvas {
+    display: none;
+  }
+}
+
+@media (min-width: 1200px) {
+  .topInner,
+  .navbar {
+    padding-left: 2.5rem;
+    padding-right: 2.5rem;
+  }
+
+  .raizingLogo {
+    height: 48px;
+    max-width: 150px;
+  }
+
+  .partnerLogo {
+    height: 48px;
+    max-width: 150px;
+  }
+}

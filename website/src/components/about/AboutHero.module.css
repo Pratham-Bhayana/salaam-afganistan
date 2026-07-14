@@ -1,0 +1,30 @@
+.hero {
+  background:
+    linear-gradient(135deg, #0a0a0a 0%, #1f1f1f 55%, #111 100%);
+  color: var(--color-white);
+  padding: 4.5rem 0 4rem;
+}
+
+.inner {
+  max-width: 48rem;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-great-vibes), "Great Vibes", cursive;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.inner h1 {
+  color: var(--color-white);
+  font-size: clamp(2rem, 4vw, 3rem);
+  margin-bottom: 1rem;
+}
+
+.inner p {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
