@@ -1,0 +1,470 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import {
+  createEmbassy,
+  getEmbassy,
+  listVisaTypesForPicker,
+  updateEmbassy,
+  type CreateEmbassyInput,
+  type Embassy,
+  type VisaTypeOption,
+} from '../api/embassies';
+import { ApiError } from '../api/client';
+import './EmbassyForm.css';
+
+type Mode = 'create' | 'edit';
+
+type FormState = {
+  code: string;
+  name: string;
+  isActive: boolean;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  country: string;
+  jurisdictionCountries: string[];
+  supportedVisaTypeCodes: string[];
+  logoUrl: string;
+  primaryColor: string;
+  secondaryColor: string;
+  notes: string;
+};
+
+type FieldErrors = Partial<Record<'code' | 'name' | 'email', string>>;
+
+const EMPTY: FormState = {
+  code: '',
+  name: '',
+  isActive: true,
+  email: '',
+  phone: '',
+  address: '',
+  city: '',
+  country: '',
+  jurisdictionCountries: [],
+  supportedVisaTypeCodes: [],
+  logoUrl: '',
+  primaryColor: '#0B3D2E',
+  secondaryColor: '#C4A35A',
+  notes: '',
+};
+
+function fromEmbassy(embassy: Embassy): FormState {
+  return {
+    code: embassy.code || '',
+    name: embassy.name || '',
+    isActive: embassy.isActive !== false,
+    email: embassy.contact?.email || '',
+    phone: embassy.contact?.phone || '',
+    address: embassy.contact?.address || '',
+    city: embassy.contact?.city || '',
+    country: embassy.contact?.country || '',
+    jurisdictionCountries: [...(embassy.jurisdictionCountries || [])],
+    supportedVisaTypeCodes: [...(embassy.supportedVisaTypeCodes || [])],
+    logoUrl: embassy.logoUrl || '',
+    primaryColor: embassy.branding?.primaryColor || '#0B3D2E',
+    secondaryColor: embassy.branding?.secondaryColor || '#C4A35A',
+    notes: embassy.notes || '',
+  };
+}
+
+function validate(form: FormState, mode: Mode): FieldErrors {
+  const errors: FieldErrors = {};
+  if (mode === 'create' && !form.code.trim()) errors.code = 'Code is required';
+  if (!form.name.trim()) errors.name = 'Name is required';
+  if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+    errors.email = 'Enter a valid email';
+  }
+  return errors;
+}
+
+function buildPayload(form: FormState, mode: Mode): CreateEmbassyInput | Omit<CreateEmbassyInput, 'code'> {
+  const base = {
+    name: form.name.trim(),
+    logoUrl: form.logoUrl.trim() || undefined,
+    branding: {
+      primaryColor: form.primaryColor || undefined,
+      secondaryColor: form.secondaryColor || undefined,
+    },
+    contact: {
+      email: form.email.trim() || undefined,
+      phone: form.phone.trim() || undefined,
+      address: form.address.trim() || undefined,
+      city: form.city.trim() || undefined,
+      country: form.country.trim().toUpperCase() || undefined,
+    },
+    jurisdictionCountries: form.jurisdictionCountries,
+    supportedVisaTypeCodes: form.supportedVisaTypeCodes,
+    isActive: form.isActive,
+    notes: form.notes.trim() || undefined,
+  };
+  if (mode === 'create') {
+    return { ...base, code: form.code.trim().toUpperCase() };
+  }
+  return base;
+}
+
+export function EmbassyForm({ mode }: { mode: Mode }) {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [form, setForm] = useState<FormState>(EMPTY);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+  const [apiError, setApiError] = useState('');
+  const [loading, setLoading] = useState(mode === 'edit');
+  const [saving, setSaving] = useState(false);
+  const [visaTypes, setVisaTypes] = useState<VisaTypeOption[]>([]);
+  const [countryDraft, setCountryDraft] = useState('');
+  const [brandingOpen, setBrandingOpen] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const { data } = await listVisaTypesForPicker('embassy');
+        if (!cancelled) setVisaTypes(data);
+      } catch {
+        if (!cancelled) setVisaTypes([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mode !== 'edit' || !id) return;
+    let cancelled = false;
+    void (async () => {
+      setLoading(true);
+      try {
+        const { data } = await getEmbassy(id);
+        if (!cancelled) {
+          setForm(fromEmbassy(data.embassy));
+          setBrandingOpen(Boolean(data.embassy.logoUrl || data.embassy.branding));
+          setApiError('');
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setApiError(err instanceof ApiError ? err.message : 'Failed to load embassy');
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, id]);
+
+  function setField<K extends keyof FormState>(key: K, value: FormState[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function addCountry() {
+    const code = countryDraft.trim().toUpperCase();
+    if (!code) return;
+    if (form.jurisdictionCountries.includes(code)) {
+      setCountryDraft('');
+      return;
+    }
+    setField('jurisdictionCountries', [...form.jurisdictionCountries, code]);
+    setCountryDraft('');
+  }
+
+  function toggleVisa(code: string) {
+    setField(
+      'supportedVisaTypeCodes',
+      form.supportedVisaTypeCodes.includes(code)
+        ? form.supportedVisaTypeCodes.filter((c) => c !== code)
+        : [...form.supportedVisaTypeCodes, code]
+    );
+  }
+
+  async function onSubmit(e: FormEvent) {
+    e.preventDefault();
+    const errors = validate(form, mode);
+    setFieldErrors(errors);
+    if (Object.keys(errors).length) return;
+
+    setSaving(true);
+    setApiError('');
+    try {
+      if (mode === 'create') {
+        const { data } = await createEmbassy(buildPayload(form, 'create') as CreateEmbassyInput);
+        navigate(`/embassies/${data._id}`, { replace: true });
+        return;
+      }
+      if (!id) return;
+      await updateEmbassy(id, buildPayload(form, 'edit'));
+      navigate(`/embassies/${id}`, { replace: true });
+    } catch (err) {
+      setApiError(err instanceof ApiError ? err.message : 'Save failed');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="embassy-form">
+        <p className="embassy-form__lead">Loading embassy…</p>
+      </div>
+    );
+  }
+
+  return (
+    <form className="embassy-form" onSubmit={(e) => void onSubmit(e)} noValidate>
+      <nav className="embassy-form__crumbs" aria-label="Breadcrumb">
+        <Link to="/embassies">Embassies</Link>
+        <span aria-hidden>/</span>
+        <span>{mode === 'create' ? 'New' : form.name || 'Edit'}</span>
+      </nav>
+
+      <h1 className="embassy-form__title">
+        {mode === 'create' ? 'Create embassy' : 'Edit embassy'}
+      </h1>
+      <p className="embassy-form__lead">
+        {mode === 'create'
+          ? 'Set identity, contact, and coverage for consular routing.'
+          : 'Update profile fields. Embassy code cannot be changed.'}
+      </p>
+
+      {apiError ? <div className="embassy-form__banner">{apiError}</div> : null}
+
+      <section className="embassy-form__section">
+        <h2>Identity</h2>
+        <div className="embassy-form__grid">
+          <label className="embassy-form__field">
+            Code
+            <input
+              value={form.code}
+              onChange={(e) => setField('code', e.target.value.toUpperCase())}
+              placeholder="e.g. DXB"
+              disabled={mode === 'edit'}
+              maxLength={12}
+              required={mode === 'create'}
+              autoFocus={mode === 'create'}
+            />
+            <span className="embassy-form__hint">Short unique code (uppercase)</span>
+            {fieldErrors.code ? <span className="embassy-form__error">{fieldErrors.code}</span> : null}
+          </label>
+          <label className="embassy-form__field">
+            Name
+            <input
+              value={form.name}
+              onChange={(e) => setField('name', e.target.value)}
+              placeholder="Dubai Consulate"
+              required
+              autoFocus={mode === 'edit'}
+            />
+            {fieldErrors.name ? <span className="embassy-form__error">{fieldErrors.name}</span> : null}
+          </label>
+          <label className="embassy-form__toggle">
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) => setField('isActive', e.target.checked)}
+            />
+            Active embassy
+          </label>
+        </div>
+      </section>
+
+      <section className="embassy-form__section">
+        <h2>Contact</h2>
+        <div className="embassy-form__grid">
+          <label className="embassy-form__field">
+            Email
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setField('email', e.target.value)}
+              placeholder="dubai@mfa.local"
+            />
+            {fieldErrors.email ? <span className="embassy-form__error">{fieldErrors.email}</span> : null}
+          </label>
+          <label className="embassy-form__field">
+            Phone
+            <input
+              type="tel"
+              value={form.phone}
+              onChange={(e) => setField('phone', e.target.value)}
+              placeholder="+971…"
+            />
+          </label>
+          <label className="embassy-form__field">
+            City
+            <input
+              value={form.city}
+              onChange={(e) => setField('city', e.target.value)}
+              placeholder="Dubai"
+            />
+          </label>
+          <label className="embassy-form__field">
+            Country
+            <input
+              value={form.country}
+              onChange={(e) => setField('country', e.target.value.toUpperCase())}
+              placeholder="AE"
+              maxLength={3}
+            />
+            <span className="embassy-form__hint">ISO country code</span>
+          </label>
+          <label className="embassy-form__field embassy-form__field--full">
+            Address
+            <textarea
+              value={form.address}
+              onChange={(e) => setField('address', e.target.value)}
+              placeholder="Street, building…"
+            />
+          </label>
+        </div>
+      </section>
+
+      <section className="embassy-form__section">
+        <h2>Coverage</h2>
+        <p>Jurisdiction countries and supported embassy visa types.</p>
+
+        <div className="embassy-form__field">
+          Jurisdiction countries
+          <div className="embassy-form__tag-row">
+            <input
+              value={countryDraft}
+              onChange={(e) => setCountryDraft(e.target.value.toUpperCase())}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  addCountry();
+                }
+              }}
+              placeholder="Add ISO code (e.g. AE)"
+              maxLength={3}
+            />
+            <button type="button" onClick={addCountry}>
+              Add
+            </button>
+          </div>
+          <div className="embassy-form__tags">
+            {form.jurisdictionCountries.map((code) => (
+              <span key={code} className="embassy-form__tag">
+                {code}
+                <button
+                  type="button"
+                  aria-label={`Remove ${code}`}
+                  onClick={() =>
+                    setField(
+                      'jurisdictionCountries',
+                      form.jurisdictionCountries.filter((c) => c !== code)
+                    )
+                  }
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        <div className="embassy-form__field">
+          Supported visa types
+          {visaTypes.length === 0 ? (
+            <span className="embassy-form__hint">No embassy visa types available yet.</span>
+          ) : (
+            <div className="embassy-form__chips">
+              {visaTypes.map((vt) => {
+                const selected = form.supportedVisaTypeCodes.includes(vt.code);
+                return (
+                  <button
+                    key={vt._id || vt.code}
+                    type="button"
+                    className={`embassy-form__chip${selected ? ' is-selected' : ''}`}
+                    aria-pressed={selected}
+                    onClick={() => toggleVisa(vt.code)}
+                  >
+                    {vt.name} ({vt.code})
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="embassy-form__section">
+        <button
+          type="button"
+          className="embassy-form__collapse"
+          onClick={() => setBrandingOpen((v) => !v)}
+          aria-expanded={brandingOpen}
+        >
+          {brandingOpen ? 'Hide branding' : 'Show branding (optional)'}
+        </button>
+        {brandingOpen ? (
+          <>
+            <label className="embassy-form__field">
+              Logo URL
+              <input
+                type="url"
+                value={form.logoUrl}
+                onChange={(e) => setField('logoUrl', e.target.value)}
+                placeholder="https://…"
+              />
+            </label>
+            <div className="embassy-form__colors">
+              <label className="embassy-form__field">
+                Primary color
+                <span className="embassy-form__color">
+                  <input
+                    type="color"
+                    value={form.primaryColor || '#0B3D2E'}
+                    onChange={(e) => setField('primaryColor', e.target.value)}
+                  />
+                  <input
+                    value={form.primaryColor}
+                    onChange={(e) => setField('primaryColor', e.target.value)}
+                  />
+                </span>
+              </label>
+              <label className="embassy-form__field">
+                Secondary color
+                <span className="embassy-form__color">
+                  <input
+                    type="color"
+                    value={form.secondaryColor || '#C4A35A'}
+                    onChange={(e) => setField('secondaryColor', e.target.value)}
+                  />
+                  <input
+                    value={form.secondaryColor}
+                    onChange={(e) => setField('secondaryColor', e.target.value)}
+                  />
+                </span>
+              </label>
+            </div>
+          </>
+        ) : null}
+      </section>
+
+      <section className="embassy-form__section">
+        <h2>Notes</h2>
+        <label className="embassy-form__field">
+          Internal notes
+          <textarea
+            value={form.notes}
+            onChange={(e) => setField('notes', e.target.value)}
+            placeholder="Optional operator notes…"
+          />
+        </label>
+      </section>
+
+      <div className="embassy-form__actions">
+        <Link to={mode === 'edit' && id ? `/embassies/${id}` : '/embassies'} className="is-ghost">
+          Cancel
+        </Link>
+        <button type="submit" className="is-primary" disabled={saving}>
+          {saving ? 'Saving…' : mode === 'create' ? 'Create embassy' : 'Save changes'}
+        </button>
+      </div>
+    </form>
+  );
+}

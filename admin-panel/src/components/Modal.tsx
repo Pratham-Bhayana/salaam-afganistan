@@ -6,15 +6,16 @@ type Props = {
   title: string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
 };
 
-export function Modal({ open, title, onClose, children }: Props) {
+export function Modal({ open, title, onClose, children, className }: Props) {
   if (!open) return null;
 
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="modal"
+        className={['modal', className].filter(Boolean).join(' ')}
         role="dialog"
         aria-modal="true"
         aria-label={title}

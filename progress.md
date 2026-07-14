@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 13 July 2026 (Applications live + reject / doc request)  
+**Last updated:** 14 July 2026 (Admin Embassies section live)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
@@ -13,7 +13,7 @@
 | Admin backend (PRD §8) | Done (+ document request API) |
 | Embassy backend (PRD §9) | Done |
 | Website applicant APIs (Firebase auth) | Done |
-| **Admin Panel frontend** | **Dashboard + Applications live (list/detail/reject/request docs)** |
+| **Admin Panel frontend** | **Dashboard + Applications + Embassies live** |
 | Embassy / Website frontends | Not started |
 | Live payment gateway / OCR / WebSockets | Not started |
 
@@ -21,15 +21,20 @@
 
 ## Completed (latest)
 
+### Admin Embassies — live backend wiring (PRD §8.5)
+- Nav + routes: `/embassies`, `/embassies/new`, `/embassies/:id`, `/embassies/:id/edit`
+- List with search (350ms debounce), Active/Inactive filter, pagination, polling
+- Create / edit forms (identity, contact, coverage, branding, notes) via `POST/PATCH /embassies`
+- Detail: contact + jurisdictions + visa types, pipeline `statusCounts`, routed applications table
+- Application Detail **Send to embassy** requires embassy selection when unset; confirms when already assigned; passes `embassy` on status POST
+- Visa type picker uses admin `/visa-types?channel=embassy` with public API fallback
+
 ### Admin Applications — live backend wiring
 - Admin login (`/login`) + JWT session (refresh on 401)
 - Applications table + profile load from `/api/v1/admin/applications*`
 - Polling refresh (list ~8s, detail ~5s)
 - **Reject visa** → `POST .../status` with `rejected` + reason
 - **Request documents** → modal asks document name → `POST .../documents/request`
-  - Creates `requestedDocuments[]` with status `pending` / “Request sent”
-  - Moves application to `documents_required` + notifies applicant
-- Applicant upload matching key marks request as `uploaded`
 
 Run: backend `npm run dev` + `cd admin-panel && npm run dev`  
 Login: `admin@salaam.local` / `ChangeMeNow!123`
@@ -39,7 +44,7 @@ Login: `admin@salaam.local` / `ChangeMeNow!123`
 ## Next up
 
 1. Wire chat on application profile to real chat APIs  
-2. Continue section-wise (Finance, Embassies, …)  
+2. Continue section-wise (Finance, Fees & Content, Issued Visas, …)  
 3. Scaffold website with Firebase client  
 
 ---
@@ -56,3 +61,4 @@ Login: `admin@salaam.local` / `ChangeMeNow!123`
 | 13 Jul 2026 | Stored Firebase web config in `website/.env`; Firebase Admin SDK in backend `.env` |
 | 13 Jul 2026 | Admin Panel dashboard + Applications UI (mock) |
 | 13 Jul 2026 | Applications live API + reject visa + document request (pending status) |
+| 14 Jul 2026 | Admin Embassies section (list/create/detail/edit) + Send-to-embassy picker on Application Detail |

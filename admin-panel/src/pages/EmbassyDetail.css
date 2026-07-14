@@ -1,0 +1,243 @@
+@import '../components/DataTable.css';
+@import '../components/StatusPill.css';
+
+.embassy-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  padding: 8px 24px 36px 28px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.embassy-detail--simple {
+  padding: 24px;
+  color: var(--ink-muted);
+}
+
+.embassy-detail__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.embassy-detail__crumbs a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.embassy-detail__crumbs a:hover {
+  text-decoration: underline;
+}
+
+.embassy-detail__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.embassy-detail__identity h1 {
+  margin: 0 0 10px;
+  padding-top: 2px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+  line-height: 1.2;
+}
+
+.embassy-detail__badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.embassy-detail__code {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: var(--brand-mist);
+  color: var(--brand);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.embassy-detail__active {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.embassy-detail__active--yes {
+  background: rgba(26, 122, 76, 0.12);
+  color: #1a7a4c;
+}
+
+.embassy-detail__active--no {
+  background: rgba(107, 124, 117, 0.14);
+  color: var(--ink-muted);
+}
+
+.embassy-detail__edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.embassy-detail__edit:hover {
+  background: var(--brand-soft);
+}
+
+.embassy-detail__error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(179, 58, 58, 0.12);
+  color: #8f2a2a;
+  font-size: 13px;
+}
+
+.embassy-detail__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 900px) {
+  .embassy-detail__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.embassy-detail__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.embassy-detail__section h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.embassy-detail__section p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.embassy-detail__dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 16px;
+  margin: 0;
+}
+
+.embassy-detail__dl div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.embassy-detail__dl dt {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.embassy-detail__dl dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.embassy-detail__span {
+  grid-column: 1 / -1;
+}
+
+.embassy-detail__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.embassy-detail__chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: var(--surface-muted);
+  border: 1px solid rgba(26, 46, 40, 0.1);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.embassy-detail__pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.embassy-detail__stat {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--surface-muted);
+}
+
+.embassy-detail__stat strong {
+  display: block;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--brand);
+  letter-spacing: -0.02em;
+}
+
+.embassy-detail__stat span {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  text-transform: capitalize;
+}
+
+.embassy-detail__apps-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.embassy-detail__muted {
+  margin: 0;
+  color: var(--ink-muted);
+  font-size: 13.5px;
+}

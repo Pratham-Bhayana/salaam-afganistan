@@ -63,7 +63,8 @@
 }
 
 .modal-form input,
-.modal-form textarea {
+.modal-form textarea,
+.modal-form select {
   border: 1px solid rgba(26, 46, 40, 0.12);
   border-radius: 10px;
   padding: 10px 12px;

@@ -20,12 +20,19 @@ import {
   type ApplicationDetail as ApplicationDetailType,
   type ApplicationStatus,
 } from '../api/applications';
+import { listEmbassies, type Embassy } from '../api/embassies';
 import { ApiError } from '../api/client';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
 import './ApplicationDetail.css';
 
 const POLL_MS = 5000;
+
+function embassyIdOf(embassy: ApplicationDetailType['embassy']): string | null {
+  if (!embassy) return null;
+  if (typeof embassy === 'string') return embassy;
+  return embassy._id || null;
+}
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -40,9 +47,15 @@ export function ApplicationDetail() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [sendEmbassyOpen, setSendEmbassyOpen] = useState(false);
+  const [confirmSendOpen, setConfirmSendOpen] = useState(false);
   const [docName, setDocName] = useState('');
   const [docNote, setDocNote] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [embassyChoices, setEmbassyChoices] = useState<Embassy[]>([]);
+  const [embassyChoicesLoading, setEmbassyChoicesLoading] = useState(false);
+  const [selectedEmbassyId, setSelectedEmbassyId] = useState('');
+  const [sendNote, setSendNote] = useState('Forwarded for consular review');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -95,6 +108,7 @@ export function ApplicationDetail() {
     current.status === 'documents_required';
   const canReject = current.allowedNextStatuses?.includes('rejected');
   const canSendEmbassy = current.allowedNextStatuses?.includes('sent_to_embassy');
+  const assignedEmbassyId = embassyIdOf(current.embassy);
 
   const age = current.personal?.dateOfBirth
     ? Math.floor(
@@ -158,22 +172,66 @@ export function ApplicationDetail() {
     }
   }
 
-  async function onSendToEmbassy() {
-    if (!id) return;
+  async function loadActiveEmbassies() {
+    setEmbassyChoicesLoading(true);
+    try {
+      const { data } = await listEmbassies({ isActive: true, limit: 100 });
+      setEmbassyChoices(data);
+      if (data.length === 1) setSelectedEmbassyId(data[0]._id);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to load embassies');
+      setEmbassyChoices([]);
+    } finally {
+      setEmbassyChoicesLoading(false);
+    }
+  }
+
+  function openSendToEmbassy() {
+    setActionError('');
+    setSendNote('Forwarded for consular review');
+    if (assignedEmbassyId) {
+      setConfirmSendOpen(true);
+      return;
+    }
+    setSelectedEmbassyId('');
+    setSendEmbassyOpen(true);
+    void loadActiveEmbassies();
+  }
+
+  async function submitSendToEmbassy(embassyId: string, note?: string) {
+    if (!id || !embassyId) return;
     setActionLoading(true);
     setActionError('');
     try {
       await changeApplicationStatus(id, {
         toStatus: 'sent_to_embassy' as ApplicationStatus,
-        note: 'Forwarded to embassy',
+        embassy: embassyId,
+        note: note?.trim() || 'Forwarded for consular review',
       });
       const fresh = await getApplication(id);
       setApp(fresh.data);
+      setSendEmbassyOpen(false);
+      setConfirmSendOpen(false);
     } catch (err) {
       setActionError(err instanceof ApiError ? err.message : 'Failed to send to embassy');
     } finally {
       setActionLoading(false);
     }
+  }
+
+  async function onConfirmExistingEmbassy(e: FormEvent) {
+    e.preventDefault();
+    if (!assignedEmbassyId) return;
+    await submitSendToEmbassy(assignedEmbassyId, sendNote);
+  }
+
+  async function onPickEmbassyAndSend(e: FormEvent) {
+    e.preventDefault();
+    if (!selectedEmbassyId) {
+      setActionError('Select an embassy before sending');
+      return;
+    }
+    await submitSendToEmbassy(selectedEmbassyId, sendNote);
   }
 
   function copyId() {
@@ -234,7 +292,7 @@ export function ApplicationDetail() {
             <button
               type="button"
               className="app-detail__btn app-detail__btn--green"
-              onClick={() => void onSendToEmbassy()}
+              onClick={openSendToEmbassy}
               disabled={actionLoading}
             >
               Send to embassy
@@ -248,7 +306,9 @@ export function ApplicationDetail() {
       </header>
 
       <div className="app-detail__body">
-        {actionError ? <div className="app-detail__alert app-detail__alert--error">{actionError}</div> : null}
+        {actionError && !requestOpen && !rejectOpen && !sendEmbassyOpen && !confirmSendOpen ? (
+          <div className="app-detail__alert app-detail__alert--error">{actionError}</div>
+        ) : null}
 
         {app.documentRequestNote || app.status === 'documents_required' ? (
           <div className="app-detail__alert" role="status">
@@ -552,6 +612,81 @@ export function ApplicationDetail() {
               disabled={actionLoading || !rejectReason.trim()}
             >
               {actionLoading ? 'Rejecting…' : 'Reject visa'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={confirmSendOpen}
+        title="Send to embassy"
+        onClose={() => setConfirmSendOpen(false)}
+      >
+        <form className="modal-form" onSubmit={(e) => void onConfirmExistingEmbassy(e)}>
+          {actionError ? <div className="modal-form__error">{actionError}</div> : null}
+          <p style={{ margin: 0, fontSize: 13.5, color: 'var(--ink-muted)' }}>
+            Forward this application to <strong>{embassyLabel(current.embassy)}</strong>?
+          </p>
+          <label>
+            Note (optional)
+            <textarea value={sendNote} onChange={(e) => setSendNote(e.target.value)} />
+          </label>
+          <div className="modal-form__actions">
+            <button type="button" className="is-ghost" onClick={() => setConfirmSendOpen(false)}>
+              Cancel
+            </button>
+            <button type="submit" className="is-primary" disabled={actionLoading}>
+              {actionLoading ? 'Sending…' : 'Confirm send'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={sendEmbassyOpen}
+        title="Send to embassy"
+        onClose={() => setSendEmbassyOpen(false)}
+      >
+        <form className="modal-form" onSubmit={(e) => void onPickEmbassyAndSend(e)}>
+          {actionError ? <div className="modal-form__error">{actionError}</div> : null}
+          <label>
+            Embassy
+            <select
+              value={selectedEmbassyId}
+              onChange={(e) => setSelectedEmbassyId(e.target.value)}
+              required
+              disabled={embassyChoicesLoading || actionLoading}
+              autoFocus
+            >
+              <option value="">
+                {embassyChoicesLoading ? 'Loading embassies…' : 'Select an embassy'}
+              </option>
+              {embassyChoices.map((emb) => (
+                <option key={emb._id} value={emb._id}>
+                  {emb.name} ({emb.code})
+                </option>
+              ))}
+            </select>
+          </label>
+          {!embassyChoicesLoading && embassyChoices.length === 0 ? (
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-muted)' }}>
+              No active embassies available. Create one under Embassies first.
+            </p>
+          ) : null}
+          <label>
+            Note (optional)
+            <textarea value={sendNote} onChange={(e) => setSendNote(e.target.value)} />
+          </label>
+          <div className="modal-form__actions">
+            <button type="button" className="is-ghost" onClick={() => setSendEmbassyOpen(false)}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="is-primary"
+              disabled={actionLoading || !selectedEmbassyId || embassyChoicesLoading}
+            >
+              {actionLoading ? 'Sending…' : 'Send to embassy'}
             </button>
           </div>
         </form>

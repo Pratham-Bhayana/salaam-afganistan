@@ -1,0 +1,320 @@
+.embassy-form {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+  /* Keep fields clear of the card edge / rounded corner (avoids left clip) */
+  padding: 8px 24px 36px 28px;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+.embassy-form__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ink-muted);
+  padding-left: 2px;
+}
+
+.embassy-form__crumbs a {
+  color: var(--brand);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.embassy-form__crumbs a:hover {
+  text-decoration: underline;
+}
+
+.embassy-form__title {
+  margin: 0;
+  padding-top: 2px;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--brand);
+  line-height: 1.2;
+}
+
+.embassy-form__lead {
+  margin: -10px 0 0;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.embassy-form__banner {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(179, 58, 58, 0.12);
+  color: #8f2a2a;
+  font-size: 13px;
+}
+
+.embassy-form__section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.embassy-form__section h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.embassy-form__section > p {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.embassy-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .embassy-form__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.embassy-form__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+
+.embassy-form__field--full {
+  grid-column: 1 / -1;
+}
+
+.embassy-form__field input,
+.embassy-form__field textarea,
+.embassy-form__field select {
+  border: 1px solid rgba(26, 46, 40, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--surface-muted);
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.embassy-form__field textarea {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.embassy-form__field input:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.embassy-form__hint {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-faint);
+}
+
+.embassy-form__error {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8f2a2a;
+}
+
+.embassy-form__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.embassy-form__toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand);
+}
+
+.embassy-form__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.embassy-form__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(26, 46, 40, 0.12);
+  background: var(--surface-muted);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.embassy-form__chip.is-selected {
+  background: var(--brand-mist);
+  border-color: rgba(11, 61, 46, 0.28);
+  color: var(--brand);
+}
+
+.embassy-form__tag-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.embassy-form__tag-row input {
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid rgba(26, 46, 40, 0.12);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface-muted);
+}
+
+.embassy-form__tag-row button {
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.embassy-form__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.embassy-form__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 8px 0 10px;
+  border-radius: 8px;
+  background: var(--brand-mist);
+  color: var(--brand);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.embassy-form__tag button {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  color: var(--ink-muted);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.embassy-form__tag button:hover {
+  background: rgba(11, 61, 46, 0.1);
+  color: var(--brand);
+}
+
+.embassy-form__colors {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.embassy-form__color {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.embassy-form__color input[type='color'] {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.embassy-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 8px;
+  padding-bottom: 12px;
+}
+
+.embassy-form__actions button,
+.embassy-form__actions a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.embassy-form__actions .is-ghost {
+  background: var(--surface-muted);
+  color: var(--ink);
+}
+
+.embassy-form__actions .is-primary {
+  background: var(--accent);
+  color: var(--brand-deep);
+}
+
+.embassy-form__actions .is-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.embassy-form__actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.embassy-form__collapse {
+  border: none;
+  background: transparent;
+  padding: 0;
+  align-self: flex-start;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand);
+  cursor: pointer;
+}
+
+.embassy-form__collapse:hover {
+  text-decoration: underline;
+}
