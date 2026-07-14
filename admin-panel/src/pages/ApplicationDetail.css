@@ -390,6 +390,30 @@
   color: #fff;
 }
 
+.app-detail__chat-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.app-detail__open-chat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--brand-mist);
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.app-detail__open-chat:hover {
+  background: rgba(11, 61, 46, 0.14);
+}
+
 .app-detail__messages {
   flex: 1;
   min-height: 180px;

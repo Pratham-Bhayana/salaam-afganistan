@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   Building2,
   Copy,
   Download,
+  ExternalLink,
   FileText,
   Plane,
   Send,
@@ -21,12 +22,21 @@ import {
   type ApplicationStatus,
 } from '../api/applications';
 import { listEmbassies, type Embassy } from '../api/embassies';
-import { ApiError } from '../api/client';
+import {
+  ensureApplicationRoom,
+  formatChatTime,
+  listChatMessages,
+  sendChatMessage,
+  type ChatMessage,
+} from '../api/chat';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
 import './ApplicationDetail.css';
 
 const POLL_MS = 5000;
+const CHAT_POLL_MS = 4000;
 
 function embassyIdOf(embassy: ApplicationDetailType['embassy']): string | null {
   if (!embassy) return null;
@@ -36,6 +46,9 @@ function embassyIdOf(embassy: ApplicationDetailType['embassy']): string | null {
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
+  const { staff } = useAuth();
+  const canChat = staffHasPermission(staff, 'chat:access');
+  const staffId = staff?.id || '';
   const [app, setApp] = useState<ApplicationDetailType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,6 +56,7 @@ export function ApplicationDetail() {
   const [actionLoading, setActionLoading] = useState(false);
   const [chatTab, setChatTab] = useState<'applicant' | 'embassy'>('applicant');
   const [draft, setDraft] = useState('');
+  const [embassyDraft, setEmbassyDraft] = useState('');
   const [copied, setCopied] = useState(false);
 
   const [requestOpen, setRequestOpen] = useState(false);
@@ -56,6 +70,13 @@ export function ApplicationDetail() {
   const [embassyChoicesLoading, setEmbassyChoicesLoading] = useState(false);
   const [selectedEmbassyId, setSelectedEmbassyId] = useState('');
   const [sendNote, setSendNote] = useState('Forwarded for consular review');
+
+  const [embassyRoomId, setEmbassyRoomId] = useState<string | null>(null);
+  const [embassyMessages, setEmbassyMessages] = useState<ChatMessage[]>([]);
+  const [embassyChatLoading, setEmbassyChatLoading] = useState(false);
+  const [embassyChatSending, setEmbassyChatSending] = useState(false);
+  const [embassyChatError, setEmbassyChatError] = useState('');
+  const embassyMessagesRef = useRef<HTMLDivElement | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -83,6 +104,69 @@ export function ApplicationDetail() {
     }, POLL_MS);
     return () => window.clearInterval(timer);
   }, [id, load]);
+
+  const assignedEmbassyIdEarly = app ? embassyIdOf(app.embassy) : null;
+
+  useEffect(() => {
+    if (chatTab !== 'embassy' || !id || !canChat) return;
+    const embassyId = assignedEmbassyIdEarly;
+    if (!embassyId) {
+      setEmbassyRoomId(null);
+      setEmbassyMessages([]);
+      setEmbassyChatError('');
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setEmbassyChatLoading(true);
+      setEmbassyChatError('');
+      try {
+        const { data: room } = await ensureApplicationRoom({
+          embassyId,
+          applicationId: id,
+          title: `Case chat — ${app?.referenceId || id}`,
+        });
+        if (cancelled || !room?._id) return;
+        setEmbassyRoomId(room._id);
+        const { data: msgs } = await listChatMessages(room._id, { limit: 100 });
+        if (!cancelled) setEmbassyMessages(Array.isArray(msgs) ? msgs : []);
+      } catch (err) {
+        if (!cancelled) {
+          setEmbassyChatError(
+            err instanceof ApiError ? err.message : 'Failed to open embassy chat'
+          );
+        }
+      } finally {
+        if (!cancelled) setEmbassyChatLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [chatTab, id, canChat, assignedEmbassyIdEarly, app?.referenceId]);
+
+  useEffect(() => {
+    if (chatTab !== 'embassy' || !embassyRoomId) return;
+    const timer = window.setInterval(() => {
+      void (async () => {
+        try {
+          const { data } = await listChatMessages(embassyRoomId, { limit: 100 });
+          setEmbassyMessages(Array.isArray(data) ? data : []);
+        } catch {
+          /* keep last messages */
+        }
+      })();
+    }, CHAT_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [chatTab, embassyRoomId]);
+
+  useEffect(() => {
+    const el = embassyMessagesRef.current;
+    if (!el || chatTab !== 'embassy') return;
+    el.scrollTop = el.scrollHeight;
+  }, [embassyMessages.length, chatTab, embassyRoomId]);
 
   if (!id) return <Navigate to="/applications" replace />;
   if (!loading && !app && error) {
@@ -243,6 +327,23 @@ export function ApplicationDetail() {
   function onSendChat(e: FormEvent) {
     e.preventDefault();
     setDraft('');
+  }
+
+  async function onSendEmbassyChat(e: FormEvent) {
+    e.preventDefault();
+    if (!embassyRoomId || !embassyDraft.trim()) return;
+    setEmbassyChatSending(true);
+    setEmbassyChatError('');
+    try {
+      await sendChatMessage(embassyRoomId, embassyDraft.trim());
+      setEmbassyDraft('');
+      const { data } = await listChatMessages(embassyRoomId, { limit: 100 });
+      setEmbassyMessages(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setEmbassyChatError(err instanceof ApiError ? err.message : 'Failed to send message');
+    } finally {
+      setEmbassyChatSending(false);
+    }
   }
 
   const requested = current.requestedDocuments || [];
@@ -414,41 +515,132 @@ export function ApplicationDetail() {
               </button>
             </div>
 
-            <div className="app-detail__messages">
-              {(app.activity || [])
-                .filter((a) => a.note)
-                .slice(-6)
-                .map((msg, idx) => (
-                  <div
-                    key={`${msg.at}-${idx}`}
-                    className={`app-detail__bubble ${msg.actorName === 'You' ? 'is-out' : 'is-in'}`}
-                  >
-                    <p>{msg.note}</p>
-                    <span>
-                      {msg.actorName || msg.action} · {formatDate(msg.at)}
-                    </span>
-                  </div>
-                ))}
-              {!(app.activity || []).length ? (
-                <div className="app-detail__bubble is-in">
-                  <p>No activity yet for this application.</p>
-                  <span>System</span>
+            {chatTab === 'applicant' ? (
+              <>
+                <div className="app-detail__messages">
+                  {(app.activity || [])
+                    .filter((a) => a.note)
+                    .slice(-6)
+                    .map((msg, idx) => (
+                      <div
+                        key={`${msg.at}-${idx}`}
+                        className={`app-detail__bubble ${msg.actorName === 'You' ? 'is-out' : 'is-in'}`}
+                      >
+                        <p>{msg.note}</p>
+                        <span>
+                          {msg.actorName || msg.action} · {formatDate(msg.at)}
+                        </span>
+                      </div>
+                    ))}
+                  {!(app.activity || []).length ? (
+                    <div className="app-detail__bubble is-in">
+                      <p>Applicant chat is coming soon. Showing recent activity notes for now.</p>
+                      <span>System</span>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
 
-            <form className="app-detail__composer" onSubmit={onSendChat}>
-              <input
-                type="text"
-                placeholder="Type a message…"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-              />
-              <button type="submit" disabled={!draft.trim()}>
-                <Send size={16} />
-                Send
-              </button>
-            </form>
+                <form className="app-detail__composer" onSubmit={onSendChat}>
+                  <input
+                    type="text"
+                    placeholder="Applicant chat coming soon…"
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    disabled
+                  />
+                  <button type="submit" disabled>
+                    <Send size={16} />
+                    Send
+                  </button>
+                </form>
+              </>
+            ) : (
+              <>
+                <div className="app-detail__chat-toolbar">
+                  {embassyRoomId ? (
+                    <Link className="app-detail__open-chat" to={`/chat?room=${embassyRoomId}`}>
+                      <ExternalLink size={14} />
+                      Open in Chat
+                    </Link>
+                  ) : assignedEmbassyId ? (
+                    <Link
+                      className="app-detail__open-chat"
+                      to={`/chat?application=${id}&embassy=${assignedEmbassyId}`}
+                    >
+                      <ExternalLink size={14} />
+                      Open in Chat
+                    </Link>
+                  ) : null}
+                </div>
+
+                {!assignedEmbassyId ? (
+                  <div className="app-detail__messages">
+                    <div className="app-detail__bubble is-in">
+                      <p>Assign / send to an embassy first to start embassy chat.</p>
+                      <span>System</span>
+                    </div>
+                  </div>
+                ) : !canChat ? (
+                  <div className="app-detail__messages">
+                    <div className="app-detail__bubble is-in">
+                      <p>You need chat:access permission to use embassy chat.</p>
+                      <span>System</span>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {embassyChatError ? (
+                      <div className="app-detail__alert app-detail__alert--error">{embassyChatError}</div>
+                    ) : null}
+                    <div className="app-detail__messages" ref={embassyMessagesRef}>
+                      {embassyChatLoading && !embassyMessages.length ? (
+                        <p className="app-detail__muted">Loading embassy chat…</p>
+                      ) : null}
+                      {!embassyChatLoading && embassyMessages.length === 0 ? (
+                        <div className="app-detail__bubble is-in">
+                          <p>No messages yet. Start the embassy thread.</p>
+                          <span>System</span>
+                        </div>
+                      ) : null}
+                      {embassyMessages.map((msg) => {
+                        const mine =
+                          msg.senderType === 'staff' && String(msg.senderId) === String(staffId);
+                        return (
+                          <div
+                            key={msg._id}
+                            className={`app-detail__bubble ${mine ? 'is-out' : 'is-in'}`}
+                          >
+                            <p>{msg.body}</p>
+                            <span>
+                              {mine ? 'You' : msg.senderName} · {formatChatTime(msg.createdAt)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <form
+                      className="app-detail__composer"
+                      onSubmit={(e) => void onSendEmbassyChat(e)}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Message the embassy…"
+                        value={embassyDraft}
+                        onChange={(e) => setEmbassyDraft(e.target.value)}
+                        disabled={embassyChatSending || !embassyRoomId}
+                      />
+                      <button
+                        type="submit"
+                        disabled={embassyChatSending || !embassyDraft.trim() || !embassyRoomId}
+                      >
+                        <Send size={16} />
+                        {embassyChatSending ? 'Sending…' : 'Send'}
+                      </button>
+                    </form>
+                  </>
+                )}
+              </>
+            )}
           </section>
         </div>
 

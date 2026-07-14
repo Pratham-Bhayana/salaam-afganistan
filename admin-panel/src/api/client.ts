@@ -14,6 +14,13 @@ export type StaffSession = {
   permissions?: string[];
 };
 
+export function staffHasPermission(staff: StaffSession | null | undefined, permission: string) {
+  if (!staff) return false;
+  if (staff.role === 'super_admin') return true;
+  const perms = staff.permissions || [];
+  return perms.includes('*') || perms.includes(permission);
+}
+
 type ApiSuccess<T> = {
   success: true;
   data: T;

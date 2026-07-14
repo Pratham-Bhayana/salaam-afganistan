@@ -45,12 +45,14 @@
 }
 
 .admin-shell__main {
+  position: relative;
   flex: 1;
   min-width: 0;
   min-height: 0;
   display: flex;
   padding: 0;
   margin: 0;
+  overflow: hidden;
 }
 
 .admin-shell__card {
@@ -61,7 +63,7 @@
   background: var(--surface);
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   box-shadow: var(--shadow-card);
-  padding: 28px 32px 20px;
+  padding: 28px 32px 0;
   overflow: hidden;
 }
 
@@ -73,6 +75,17 @@
   overflow: hidden;
 }
 
+.admin-shell__card--chat {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+}
+
 @media (max-width: 960px) {
   .admin-shell__frame {
     flex-direction: column;
@@ -82,7 +95,7 @@
   }
 
   .admin-shell__card {
-    padding: 20px 16px 16px;
+    padding: 20px 16px 0;
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   }
 }
