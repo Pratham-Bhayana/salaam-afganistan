@@ -16,6 +16,10 @@
   overflow: hidden;
 }
 
+.modal.modal--wide {
+  width: min(720px, 100%);
+}
+
 .modal__header {
   display: flex;
   align-items: center;
