@@ -5,6 +5,14 @@ import './EmbassyShell.css';
 export function EmbassyShell() {
   const { pathname } = useLocation();
   const isApplicationDetail = /^\/applications\/[^/]+$/.test(pathname);
+  const isChat = pathname === '/chat' || pathname.startsWith('/chat/');
+
+  const cardMods = [
+    isApplicationDetail ? 'embassy-shell__card--detail' : '',
+    isChat ? 'embassy-shell__card--chat' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="embassy-shell">
@@ -14,9 +22,7 @@ export function EmbassyShell() {
       <div className="embassy-shell__frame">
         <Sidebar />
         <main className="embassy-shell__main">
-          <div
-            className={`embassy-shell__card${isApplicationDetail ? ' embassy-shell__card--detail' : ''}`}
-          >
+          <div className={`embassy-shell__card${cardMods ? ` ${cardMods}` : ''}`}>
             <Outlet />
           </div>
         </main>

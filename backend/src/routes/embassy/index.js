@@ -97,7 +97,17 @@ router.get(
   applicationController.viewDocument
 );
 
-// ─── Chat (9.3) ──────────────────────────────────────────────────────────────
+// ─── Chat (9.3) + inter-embassy coordination ─────────────────────────────────
+router.get(
+  '/chat/peer-embassies',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS),
+  chatController.listPeerEmbassies
+);
+router.get(
+  '/chat/unread',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS),
+  chatController.unreadSummary
+);
 router.get('/chat/rooms', requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS), chatController.listRooms);
 router.post(
   '/chat/rooms/application',
@@ -106,10 +116,22 @@ router.post(
   validate,
   chatController.ensureApplicationRoom
 );
+router.post(
+  '/chat/rooms/inter-embassy',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS),
+  body('peerEmbassyId').notEmpty(),
+  validate,
+  chatController.ensureInterEmbassyRoom
+);
 router.get(
   '/chat/rooms/:roomId/messages',
   requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS),
   chatController.listMessages
+);
+router.post(
+  '/chat/rooms/:roomId/read',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.CHAT_ACCESS),
+  chatController.markRead
 );
 router.post(
   '/chat/rooms/:roomId/messages',

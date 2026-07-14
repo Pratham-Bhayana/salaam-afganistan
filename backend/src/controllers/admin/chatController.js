@@ -3,6 +3,16 @@ const ChatMessage = require('../../models/ChatMessage');
 const Embassy = require('../../models/Embassy');
 const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination } = require('../../utils/helpers');
+const { unreadCountsByRoom, markRoomRead, totalUnread } = require('../../services/chatReadService');
+
+const unreadSummary = asyncHandler(async (req, res) => {
+  const rooms = await ChatRoom.find({ isActive: true }).select('_id');
+  const total = await totalUnread(
+    rooms.map((r) => r._id),
+    req.staff._id
+  );
+  return success(res, { totalUnread: total }, { totalUnread: total });
+});
 
 const listRooms = asyncHandler(async (req, res) => {
   const filter = { isActive: true };
@@ -12,10 +22,23 @@ const listRooms = asyncHandler(async (req, res) => {
 
   const rooms = await ChatRoom.find(filter)
     .populate('embassy', 'name code')
+    .populate('peerEmbassy', 'name code')
     .populate('application', 'referenceId status')
     .sort({ lastMessageAt: -1, updatedAt: -1 });
 
-  return success(res, rooms, { count: rooms.length });
+  const counts = await unreadCountsByRoom(
+    rooms.map((r) => r._id),
+    req.staff._id
+  );
+
+  const data = rooms.map((room) => {
+    const obj = room.toObject();
+    obj.unreadCount = counts.get(String(room._id)) || 0;
+    return obj;
+  });
+
+  const totalUnreadCount = data.reduce((sum, r) => sum + (r.unreadCount || 0), 0);
+  return success(res, data, { count: data.length, totalUnread: totalUnreadCount });
 });
 
 const ensureApplicationRoom = asyncHandler(async (req, res) => {
@@ -46,6 +69,11 @@ const listMessages = asyncHandler(async (req, res) => {
   const room = await ChatRoom.findById(req.params.roomId);
   if (!room) throw new ApiError(404, 'Chat room not found');
 
+  const markRead = req.query.markRead !== 'false' && req.query.markRead !== '0';
+  if (markRead) {
+    await markRoomRead(room._id, 'staff', req.staff._id);
+  }
+
   const { page, limit, skip } = parsePagination(req.query, { defaultLimit: 50 });
   const [data, total] = await Promise.all([
     ChatMessage.find({ room: room._id }).sort({ createdAt: -1 }).skip(skip).limit(limit),
@@ -53,6 +81,14 @@ const listMessages = asyncHandler(async (req, res) => {
   ]);
 
   return success(res, data.reverse(), { page, limit, total, pages: Math.ceil(total / limit) });
+});
+
+const markRead = asyncHandler(async (req, res) => {
+  const room = await ChatRoom.findById(req.params.roomId);
+  if (!room) throw new ApiError(404, 'Chat room not found');
+
+  const result = await markRoomRead(room._id, 'staff', req.staff._id);
+  return success(res, { roomId: room._id, ...result });
 });
 
 const sendMessage = asyncHandler(async (req, res) => {
@@ -74,6 +110,13 @@ const sendMessage = asyncHandler(async (req, res) => {
     senderName: `${req.staff.firstName} ${req.staff.lastName}`,
     senderRole: req.staff.role,
     attachments,
+    readBy: [
+      {
+        readerType: 'staff',
+        readerId: req.staff._id,
+        readAt: new Date(),
+      },
+    ],
   });
 
   room.lastMessageAt = new Date();
@@ -83,8 +126,10 @@ const sendMessage = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  unreadSummary,
   listRooms,
   ensureApplicationRoom,
   listMessages,
+  markRead,
   sendMessage,
 };

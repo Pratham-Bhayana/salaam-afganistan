@@ -674,17 +674,31 @@ On `approved`, visa PDF is usually auto-generated → status becomes `visa_issue
 ```
 Send `null` / omit to unassign (use `embassyStaffId: null`).
 
-### 8.6 Chat with Raizing Global
+### 8.6 Chat with Raizing Global + other embassies
 | Method | Path | Purpose |
 |--------|------|---------|
-| `GET` | `/chat/rooms` | General + case rooms for this embassy |
+| `GET` | `/chat/peer-embassies` | Other active embassies (`name`, `code`) for coordination picker |
+| `GET` | `/chat/unread` | `{ totalUnread }` for nav badge |
+| `GET` | `/chat/rooms` | Rooms where this embassy is `embassy` or `peerEmbassy`; each includes `unreadCount` |
 | `POST` | `/chat/rooms/application` | Ensure case room exists |
-| `GET` | `/chat/rooms/:roomId/messages` | History |
+| `POST` | `/chat/rooms/inter-embassy` | Ensure coordination room with another embassy |
+| `GET` | `/chat/rooms/:roomId/messages` | History (marks room read by default; `?markRead=false` to skip) |
+| `POST` | `/chat/rooms/:roomId/read` | Explicitly mark room messages as read |
 | `POST` | `/chat/rooms/:roomId/messages` | Send message (`body` + optional `attachments`) |
 
 ```json
 { "applicationId": "...", "title": "Case SA-2026-..." }
 ```
+
+**Start / open mission-to-mission chat:**
+```json
+{ "peerEmbassyId": "<otherEmbassyObjectId>", "title": "optional" }
+```
+
+Room `type`: `general` | `application` | `inter_embassy`.  
+Inter-embassy rooms include `peerEmbassy` and a unique `pairKey`. Both embassies share the same thread.
+
+**Unread / read receipts:** messages store `readBy[{ readerType, readerId, readAt }]`. Opening a thread marks others’ messages as read. Senders see **Sent** until a peer has read (**Seen**).
 
 ### 8.7 Reports (embassy-scoped)
 | Method | Path | Purpose |

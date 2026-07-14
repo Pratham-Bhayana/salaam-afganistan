@@ -205,9 +205,11 @@ router.get(
 );
 
 // ─── Chat (8.5) ──────────────────────────────────────────────────────────────
+router.get('/chat/unread', requirePermission(PERMISSIONS.CHAT_ACCESS), chatController.unreadSummary);
 router.get('/chat/rooms', requirePermission(PERMISSIONS.CHAT_ACCESS), chatController.listRooms);
 router.post('/chat/rooms/application', requirePermission(PERMISSIONS.CHAT_ACCESS), chatController.ensureApplicationRoom);
 router.get('/chat/rooms/:roomId/messages', requirePermission(PERMISSIONS.CHAT_ACCESS), chatController.listMessages);
+router.post('/chat/rooms/:roomId/read', requirePermission(PERMISSIONS.CHAT_ACCESS), chatController.markRead);
 router.post(
   '/chat/rooms/:roomId/messages',
   requirePermission(PERMISSIONS.CHAT_ACCESS),

@@ -119,6 +119,21 @@ async function seedAdminBootstrap() {
   };
 }
 
+async function ensureEmbassyGeneralRoom(embassy) {
+  await ChatRoom.findOneAndUpdate(
+    { embassy: embassy._id, type: 'general', application: null },
+    {
+      $setOnInsert: {
+        embassy: embassy._id,
+        type: 'general',
+        title: `${embassy.name} — General Coordination`,
+        isActive: true,
+      },
+    },
+    { upsert: true, new: true }
+  );
+}
+
 async function seedEmbassyBootstrap() {
   const embassy = await Embassy.findOneAndUpdate(
     { code: 'DXB' },
@@ -144,18 +159,33 @@ async function seedEmbassyBootstrap() {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
-  await ChatRoom.findOneAndUpdate(
-    { embassy: embassy._id, type: 'general', application: null },
+  await ensureEmbassyGeneralRoom(embassy);
+
+  const kbl = await Embassy.findOneAndUpdate(
+    { code: 'KBL' },
     {
-      $setOnInsert: {
-        embassy: embassy._id,
-        type: 'general',
-        title: `${embassy.name} — General Coordination`,
+      $set: {
+        name: 'Kabul Visa Office',
+        contact: {
+          email: 'kabul@mfa.local',
+          city: 'Kabul',
+          country: 'AF',
+        },
+        jurisdictionCountries: ['AF'],
+        supportedVisaTypeCodes: [
+          'embassy_tourist',
+          'embassy_business',
+          'embassy_visit_family',
+          'embassy_work',
+        ],
         isActive: true,
       },
+      $setOnInsert: { code: 'KBL' },
     },
-    { upsert: true, new: true }
+    { upsert: true, new: true, setDefaultsOnInsert: true }
   );
+
+  await ensureEmbassyGeneralRoom(kbl);
 
   const email = process.env.SEED_EMBASSY_EMAIL || 'embassy.admin@salaam.local';
   const password = process.env.SEED_EMBASSY_PASSWORD || 'ChangeMeNow!123';
@@ -178,10 +208,31 @@ async function seedEmbassyBootstrap() {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
+  const kblEmail = process.env.SEED_EMBASSY_KBL_EMAIL || 'embassy.kabul@salaam.local';
+  const kblPasswordHash = await EmbassyStaff.hashPassword(password);
+  const kblAdmin = await EmbassyStaff.findOneAndUpdate(
+    { email: kblEmail.toLowerCase() },
+    {
+      $set: {
+        embassy: kbl._id,
+        firstName: 'Kabul',
+        lastName: 'Admin',
+        role: EMBASSY_ROLES.EMBASSY_ADMIN,
+        accessMode: 'all',
+        isActive: true,
+        passwordHash: kblPasswordHash,
+      },
+      $setOnInsert: { email: kblEmail.toLowerCase() },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
   return {
     embassyCode: embassy.code,
     embassyId: embassy._id,
     embassyAdminEmail: embassyAdmin.email,
+    peerEmbassyCode: kbl.code,
+    peerEmbassyAdminEmail: kblAdmin.email,
   };
 }
 

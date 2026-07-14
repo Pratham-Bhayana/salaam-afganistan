@@ -1,13 +1,42 @@
+import { useCallback, useEffect, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut } from 'lucide-react';
 import { embassyNav } from '../nav/embassyNav';
 import { useAuth } from '../api/AuthContext';
+import { fetchChatUnread } from '../api/chat';
 import './Sidebar.css';
+
+const UNREAD_POLL_MS = 12000;
 
 export function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { staff, embassy, logout } = useAuth();
+  const { staff, embassy, logout, authenticated } = useAuth();
+  const [chatUnread, setChatUnread] = useState(0);
+
+  const loadUnread = useCallback(async () => {
+    if (!authenticated) {
+      setChatUnread(0);
+      return;
+    }
+    try {
+      const { data } = await fetchChatUnread();
+      setChatUnread(typeof data?.totalUnread === 'number' ? data.totalUnread : 0);
+    } catch {
+      /* nav badge is best-effort */
+    }
+  }, [authenticated]);
+
+  useEffect(() => {
+    void loadUnread();
+    const id = window.setInterval(() => void loadUnread(), UNREAD_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [loadUnread]);
+
+  useEffect(() => {
+    // Refresh when leaving / entering chat so badge clears after read
+    void loadUnread();
+  }, [location.pathname, loadUnread]);
 
   const displayName = staff
     ? `${staff.firstName || ''} ${staff.lastName || ''}`.trim() || staff.email
@@ -42,6 +71,14 @@ export function Sidebar() {
       <nav className="sidebar__nav" aria-label="Embassy navigation">
         {embassyNav.map((item) => {
           const Icon = item.icon;
+          const badge =
+            item.id === 'chat' && chatUnread > 0
+              ? chatUnread > 99
+                ? '99+'
+                : chatUnread
+              : item.badge != null
+                ? item.badge
+                : null;
 
           if (!item.enabled) {
             return (
@@ -53,7 +90,7 @@ export function Sidebar() {
               >
                 <Icon size={18} strokeWidth={1.75} />
                 <span className="sidebar__label">{item.label}</span>
-                {item.badge != null && <span className="sidebar__badge">{item.badge}</span>}
+                {badge != null ? <span className="sidebar__badge">{badge}</span> : null}
                 <span className="sidebar__soon">Soon</span>
               </span>
             );
@@ -77,7 +114,11 @@ export function Sidebar() {
                   />
                   <Icon size={18} strokeWidth={1.75} className="sidebar__icon" />
                   <span className="sidebar__label">{item.label}</span>
-                  {item.badge != null && <span className="sidebar__badge">{item.badge}</span>}
+                  {badge != null ? (
+                    <span className="sidebar__badge" aria-label={`${badge} unread`}>
+                      {badge}
+                    </span>
+                  ) : null}
                 </>
               )}
             </NavLink>

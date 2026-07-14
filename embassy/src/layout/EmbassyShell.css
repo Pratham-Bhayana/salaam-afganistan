@@ -46,6 +46,7 @@
 }
 
 .embassy-shell__main {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
   min-height: 0;
@@ -54,6 +55,7 @@
   flex-direction: column;
   margin: 0;
   padding: 0;
+  overflow: hidden;
 }
 
 .embassy-shell__card {
@@ -78,6 +80,18 @@
   overflow: hidden;
 }
 
+/* Chat fills main exactly — no flex height collapse / bottom float gap. */
+.embassy-shell__card--chat {
+  position: absolute;
+  inset: 0;
+  flex: none;
+  width: auto;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 @media (max-width: 960px) {
   .embassy-shell__frame {
     flex-direction: column;
@@ -90,6 +104,12 @@
   }
 
   .embassy-shell__card--detail {
+    padding: 0;
+  }
+
+  .embassy-shell__card--chat {
+    position: absolute;
+    inset: 0;
     padding: 0;
   }
 }

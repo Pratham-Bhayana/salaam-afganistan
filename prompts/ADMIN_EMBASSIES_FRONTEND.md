@@ -257,7 +257,7 @@ After implementation, verify manually:
 
 ## Implementation order
 
-1. `api/embassies.ts` + types  
+1. `api/embassies.ts` + types   
 2. List page + nav + routes  
 3. Create form  
 4. Detail + routed apps  
