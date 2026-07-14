@@ -1,0 +1,201 @@
+.hero {
+  padding: 0;
+  margin: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: calc(100vh - var(--header-top-h) - var(--navbar-h));
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.formSide {
+  order: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-black);
+  padding: 2.5rem 1.25rem;
+  min-height: 520px;
+}
+
+.formCard {
+  width: 100%;
+  max-width: 420px;
+  background: var(--color-white);
+  border-radius: 15px;
+  padding: 2.25rem 1.75rem;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+}
+
+.formTitle {
+  margin: 0 0 1.5rem;
+  font-size: 1.65rem;
+  font-weight: 700;
+  color: var(--color-black);
+  text-align: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-gray-700);
+  margin-top: 0.65rem;
+}
+
+.select {
+  width: 100%;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 10px;
+  padding: 0.85rem 0.95rem;
+  font-size: 1rem;
+  color: var(--color-gray-800);
+  background: var(--color-white);
+  appearance: auto;
+}
+
+.disabledInput {
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
+}
+
+.applyBtn {
+  margin-top: 1.25rem;
+  padding: 0.95rem 1rem;
+  font-size: 1.1rem;
+  border-radius: 12px;
+}
+
+.slideSide {
+  order: 1;
+  position: relative;
+  min-height: 420px;
+  background: var(--color-black);
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  opacity: 0;
+  transition: opacity 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.slideActive {
+  opacity: 1;
+}
+
+.slideContent {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 2.25rem 1.5rem 3.5rem;
+  color: var(--color-white);
+  z-index: 2;
+}
+
+.slideContent h2 {
+  color: var(--color-white);
+  font-size: clamp(1.6rem, 3vw, 2.2rem);
+  font-weight: 600;
+  margin-bottom: 0.65rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.slideContent p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  max-width: 34rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: var(--color-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.navBtn:hover {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+.prev {
+  left: 1rem;
+}
+
+.next {
+  right: 1rem;
+}
+
+.dots {
+  position: absolute;
+  left: 50%;
+  bottom: 1.1rem;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 0.45rem;
+  z-index: 3;
+}
+
+.dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  padding: 0;
+}
+
+.dotActive {
+  background: var(--color-white);
+}
+
+@media (min-width: 992px) {
+  .grid {
+    grid-template-columns: 5fr 7fr;
+  }
+
+  .formSide {
+    order: 1;
+    border-radius: 0;
+    padding: 3rem 2rem;
+  }
+
+  .slideSide {
+    order: 2;
+    min-height: 100%;
+  }
+
+  .formCard {
+    padding: 2.5rem 2rem;
+    transform: scale(1.04);
+  }
+
+  .slideContent {
+    padding: 2.5rem 2rem 3.75rem;
+  }
+}

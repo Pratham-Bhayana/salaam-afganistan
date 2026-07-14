@@ -1,0 +1,125 @@
+.section {
+  background: var(--color-gray-50);
+}
+
+.grid {
+  display: grid;
+  gap: 2.5rem;
+  align-items: center;
+  margin-bottom: 2.75rem;
+}
+
+.logoCard {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.85rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 14px;
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.logoCard img {
+  height: 56px;
+  width: auto;
+  filter: invert(1);
+}
+
+.logoCard strong {
+  display: block;
+  letter-spacing: 0.06em;
+  font-size: 0.95rem;
+}
+
+.logoCard span {
+  display: block;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+}
+
+.imageWrap img {
+  width: 100%;
+  border-radius: 2rem;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--color-gray-200);
+}
+
+.section-heading p,
+.grid p {
+  margin-top: 1rem;
+  color: var(--color-gray-600);
+  line-height: 1.75;
+}
+
+.checklist {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.checklist li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  color: var(--color-gray-700);
+  font-weight: 500;
+}
+
+.checklist svg {
+  color: var(--color-black);
+  flex-shrink: 0;
+  margin-top: 0.1rem;
+}
+
+.values {
+  display: grid;
+  gap: 1rem;
+}
+
+.valueCard {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 16px;
+  padding: 1.4rem 1.25rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.valueIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-black);
+  color: var(--color-white);
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.85rem;
+}
+
+.valueCard h3 {
+  margin-bottom: 0.4rem;
+  font-size: 1.1rem;
+}
+
+.valueCard p {
+  color: var(--color-gray-600);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+@media (min-width: 768px) {
+  .values {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 992px) {
+  .grid {
+    grid-template-columns: 1fr 1.05fr;
+    gap: 3rem;
+  }
+}

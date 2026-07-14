@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 14 July 2026 (admin approve → preview → save & send visa)  
+**Last updated:** 14 July 2026 (admin visa issue preview + website Home/About)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
@@ -15,7 +15,7 @@
 | Website applicant APIs (Firebase auth) | Done |
 | **Admin Panel frontend** | **Dashboard + Applications (approve/issue preview) + Embassies + Chat + Settings + Audit + Visa Templates (+ Records/Staff)** |
 | **Embassy Panel frontend** | **Login + Dashboard + Applications + Chat (peer embassies, unread/Seen) live** |
-| Website frontend | Not started |
+| Website frontend | **Home + About scaffolded (Next.js App Router, B&W)** |
 | Live payment gateway / OCR / WebSockets | Not started |
 
 ---
@@ -33,6 +33,12 @@
 - One production template: `code: evisa_default` (seed deactivates others)
 - Shared layout + `fieldsByVisaType` for tourist / business / student / transit
 - Admin load/save via templates API; PDF generation uses type fields
+
+### Website Home + About (UI scaffold)
+- Next.js 15 + TypeScript App Router in `website/` (reference LivMexico HTML/CSS in `website/reference/`)
+- Routes: `/` (Home), `/about` (About); shared Header/Footer; black & white theme; logo `public/logo.png`
+- Home sections: Hero apply form, Destinations carousel, Platform leadership, Opportunities + stats, About preview, Process steps, FAQ
+- About: hero, story/values, opportunities reuse, CTA — Unsplash placeholders for photography
 
 ### Embassy ↔ embassy chat
 - Inter-embassy rooms, unread badges, Sent/Seen receipts
@@ -52,9 +58,10 @@ Admin: `admin@salaam.local` / `ChangeMeNow!123`
 
 ## Next up
 
-1. Embassy Reports / Staff / Activity Logs  
-2. Continue admin sections (Finance, Fees & Content, Issued Visas list page, …)  
-3. Website scaffold with Firebase client  
+1. Website Firebase auth + apply flow wired to `/api/v1/website`  
+2. Contact / General Information pages  
+3. Embassy Reports / Staff / Activity Logs  
+4. Continue admin sections (Finance, Fees & Content, Issued Visas list page, …)  
 
 ---
 
@@ -64,6 +71,7 @@ Admin: `admin@salaam.local` / `ChangeMeNow!123`
 |------|--------|
 | 14 Jul 2026 | Admin visa issue: preview PDF → save to documents → optional email |
 | 14 Jul 2026 | Single eVISA template in DB + `fieldsByVisaType`; admin save/load; PDF uses type fields |
+| 14 Jul 2026 | Website Home + About pages (Next.js, B&W theme) |
 | 14 Jul 2026 | Admin Visa Templates eVISA sheet rework (logos, fields, photo/barcode, disclaimer) |
 | 14 Jul 2026 | Chat unread badges (rooms + nav) + read receipts (Sent/Seen) |
 | 14 Jul 2026 | Embassy ↔ embassy inter_embassy chat (API + Chat UI + KBL seed) |
