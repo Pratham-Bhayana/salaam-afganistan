@@ -108,8 +108,13 @@ async function seedAdminBootstrap() {
   const emailCount = await upsertMany(EmailTemplate, defaultEmailTemplates, (r) => ({ code: r.code }));
   await VisaTemplate.findOneAndUpdate(
     { code: defaultVisaTemplate.code },
-    { $set: defaultVisaTemplate },
+    { $set: { ...defaultVisaTemplate, isDefault: true, isActive: true } },
     { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+  // Keep a single active default template
+  await VisaTemplate.updateMany(
+    { code: { $ne: defaultVisaTemplate.code } },
+    { $set: { isDefault: false, isActive: false } }
   );
 
   return {

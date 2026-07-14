@@ -230,13 +230,16 @@ const changeStatus = asyncHandler(async (req, res) => {
 
   const settings = await PlatformSettings.findOne({ key: 'default' }).lean();
   let issuedVisa = null;
+  // Admin UI does preview-first issue; pass autoIssueVisa: false to skip.
   if (
     req.body.toStatus === APPLICATION_STATUSES.APPROVED &&
+    req.body.autoIssueVisa !== false &&
     settings?.system?.autoGenerateVisaOnApprove !== false
   ) {
     issuedVisa = await issueVisaForApplication({
       applicationId: updated._id,
       staff: req.staff,
+      sendEmail: req.body.sendEmail !== false,
     });
   }
 

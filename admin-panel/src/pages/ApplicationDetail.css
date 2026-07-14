@@ -75,6 +75,39 @@
   background: #b33a3a;
 }
 
+.app-detail__btn--green {
+  background: #1a7a4c;
+  color: #fff;
+}
+
+.app-detail__btn--green:hover {
+  background: #15633e;
+}
+
+.app-detail__doc-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.app-detail__doc-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: rgba(27, 77, 69, 0.1);
+  color: var(--brand);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-detail__doc-dl:hover {
+  background: rgba(27, 77, 69, 0.18);
+}
+
 .app-detail__alert--error {
   background: rgba(179, 58, 58, 0.12);
   color: #8f2a2a;

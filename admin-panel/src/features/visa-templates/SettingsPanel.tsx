@@ -24,7 +24,7 @@ export function SettingsPanel({ template, saving, onChange, onSaveDraft, onPubli
       </label>
 
       <label className="vt-field">
-        <span className="vt-field__label">Visa type</span>
+        <span className="vt-field__label">Visa type (field set)</span>
         <select
           value={template.visaType}
           onChange={(e) => onChange({ visaType: e.target.value as VisaType })}
@@ -37,6 +37,9 @@ export function SettingsPanel({ template, saving, onChange, onSaveDraft, onPubli
               </option>
             ))}
         </select>
+        <span className="vt-field__hint">
+          Fields shown on the sheet are saved for this visa type and used when generating that visa.
+        </span>
       </label>
 
       <div className="vt-field">
@@ -73,12 +76,23 @@ export function SettingsPanel({ template, saving, onChange, onSaveDraft, onPubli
       <label className="vt-toggle vt-toggle--block">
         <input
           type="checkbox"
+          checked={template.body.showPhoto}
+          onChange={(e) =>
+            onChange({ body: { ...template.body, showPhoto: e.target.checked } })
+          }
+        />
+        <span>Show photo box</span>
+      </label>
+
+      <label className="vt-toggle vt-toggle--block">
+        <input
+          type="checkbox"
           checked={template.body.showQr}
           onChange={(e) =>
             onChange({ body: { ...template.body, showQr: e.target.checked } })
           }
         />
-        <span>Show QR / barcode block</span>
+        <span>Show barcode under photo</span>
       </label>
 
       <div className="vt-settings__actions">

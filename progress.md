@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 14 July 2026 (merge: peer chat + admin Visa Templates)  
+**Last updated:** 14 July 2026 (admin approve → preview → save & send visa)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
@@ -10,10 +10,10 @@
 | Area | Status |
 |------|--------|
 | Research / seed / public visa-config | Done |
-| Admin backend (PRD §8) | Done (+ document request API) |
+| Admin backend (PRD §8) | Done (+ document request API + visa preview/issue) |
 | Embassy backend (PRD §9) | Done (+ inter-embassy chat) |
 | Website applicant APIs (Firebase auth) | Done |
-| **Admin Panel frontend** | **Dashboard + Applications + Embassies + Chat + Settings + Audit + Visa Templates UI (+ Records/Staff)** |
+| **Admin Panel frontend** | **Dashboard + Applications (approve/issue preview) + Embassies + Chat + Settings + Audit + Visa Templates (+ Records/Staff)** |
 | **Embassy Panel frontend** | **Login + Dashboard + Applications + Chat (peer embassies, unread/Seen) live** |
 | Website frontend | Not started |
 | Live payment gateway / OCR / WebSockets | Not started |
@@ -22,37 +22,27 @@
 
 ## Completed (latest)
 
+### Admin approve / issue visa (preview → save & send)
+- `POST /admin/issued-visas/preview` — PDF preview only (no DB commit)
+- `POST /admin/issued-visas/issue` — saves PDF to application documents (`issued_visa`), IssuedVisa record, status `visa_issued`, optional email (`sendEmail`)
+- Status change accepts `autoIssueVisa: false` so admin can preview first
+- Application Detail: **Approve & issue visa** / **Issue visa** modal with iframe preview + Send email checkbox + Save & send
+- Documents panel: download issued visa PDF
+
+### Visa Templates — single eVISA sheet (backend + admin UI)
+- One production template: `code: evisa_default` (seed deactivates others)
+- Shared layout + `fieldsByVisaType` for tourist / business / student / transit
+- Admin load/save via templates API; PDF generation uses type fields
+
 ### Embassy ↔ embassy chat
-- `ChatRoom.type` + `inter_embassy`; `peerEmbassy` + unique `pairKey`
-- `GET /embassy/chat/peer-embassies`, `POST /embassy/chat/rooms/inter-embassy`
-- Rooms/messages accessible when embassy is either side of the pair
-- Chat UI: **Chat with embassy** picker + Embassies filter; deep-link `?peerEmbassy=`
-- Unread badges: per-room counts + nav Chat badge (`GET /chat/unread`); open thread marks read
-- Read receipts: own messages show **Sent** / **Seen** via `readBy` (status under bubble)
-- Seed peer: `KBL` / `embassy.kabul@salaam.local` (same default password as DXB)
+- Inter-embassy rooms, unread badges, Sent/Seen receipts
+- Seed peer: `KBL` / `embassy.kabul@salaam.local`
 
-### Admin Visa Templates (UI-only)
-- Nav item enabled (removed Soon); routes `/visa-templates`, `/visa-templates/new`, `/visa-templates/:id`
-- Feature folder `admin-panel/src/features/visa-templates/`: list grid + A4 template builder with live mock preview
-- Mock data only — no backend/PDF yet
-
-### Admin Chat (PRD §8.5)
-- Nav + route `/chat` enabled; shell `admin-shell__card--chat` absolute fill (composer flush, messages-only scroll)
-- Rooms across embassies: filter by embassy + All/General/Cases; poll rooms ~12s / messages ~4s
-- Send text + attachments (FormData, max 5); deep-link `?room=` and `?application=&embassy=`
-- Application Detail **Chat with embassy** wires live case room; **Open in Chat** CTA
-- Applicant chat tab left as “coming soon” (activity notes only)
-
-### Admin Settings + Audit Logs (PRD §8.10 / NFR)
-- `/settings`, `/audit-logs` live against platform settings / email templates / audit APIs
-
-### Admin Embassies — live backend wiring (PRD §8.5)
-- Nav + routes: `/embassies`, `/embassies/new`, `/embassies/:id`, `/embassies/:id/edit`
-- List / create / edit / detail + Send-to-embassy picker on Application Detail
+### Admin Chat / Settings / Audit / Embassies
+- Live against backend APIs
 
 ### Embassy Panel — Chat / Applications / Dashboard (live)
-- `/chat` rooms + thread; general + case + inter-embassy; layout shell `card--chat`
-- Applications decide/notes/docs; Dashboard live KPIs
+- Decide/notes/docs; Dashboard live KPIs
 
 Demo data: `npm run seed:application` → `SA-SEED-EMBASSY-REVIEW`  
 DXB: `embassy.admin@salaam.local` · KBL: `embassy.kabul@salaam.local` · password `ChangeMeNow!123` (or env seed passwords)  
@@ -63,9 +53,8 @@ Admin: `admin@salaam.local` / `ChangeMeNow!123`
 ## Next up
 
 1. Embassy Reports / Staff / Activity Logs  
-2. Continue admin sections (Finance, Fees & Content, Issued Visas, …)  
+2. Continue admin sections (Finance, Fees & Content, Issued Visas list page, …)  
 3. Website scaffold with Firebase client  
-4. Visa Templates backend + real PDF generation  
 
 ---
 
@@ -73,6 +62,9 @@ Admin: `admin@salaam.local` / `ChangeMeNow!123`
 
 | Date | Update |
 |------|--------|
+| 14 Jul 2026 | Admin visa issue: preview PDF → save to documents → optional email |
+| 14 Jul 2026 | Single eVISA template in DB + `fieldsByVisaType`; admin save/load; PDF uses type fields |
+| 14 Jul 2026 | Admin Visa Templates eVISA sheet rework (logos, fields, photo/barcode, disclaimer) |
 | 14 Jul 2026 | Chat unread badges (rooms + nav) + read receipts (Sent/Seen) |
 | 14 Jul 2026 | Embassy ↔ embassy inter_embassy chat (API + Chat UI + KBL seed) |
 | 14 Jul 2026 | Admin Visa Templates module UI (list + builder, mock data) |

@@ -29,11 +29,17 @@ import {
   sendChatMessage,
   type ChatMessage,
 } from '../api/chat';
+import {
+  downloadApplicationDocument,
+  issueVisa,
+  previewVisaPdf,
+} from '../api/issuedVisas';
 import { ApiError, staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
 import './ApplicationDetail.css';
+import '../components/Modal.css';
 
 const POLL_MS = 5000;
 const CHAT_POLL_MS = 4000;
@@ -48,6 +54,8 @@ export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const { staff } = useAuth();
   const canChat = staffHasPermission(staff, 'chat:access');
+  const canIssueVisa =
+    staffHasPermission(staff, 'visas_issued:manage') || staff?.role === 'super_admin';
   const staffId = staff?.id || '';
   const [app, setApp] = useState<ApplicationDetailType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,11 +69,21 @@ export function ApplicationDetail() {
 
   const [requestOpen, setRequestOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [issueOpen, setIssueOpen] = useState(false);
   const [sendEmbassyOpen, setSendEmbassyOpen] = useState(false);
   const [confirmSendOpen, setConfirmSendOpen] = useState(false);
   const [docName, setDocName] = useState('');
   const [docNote, setDocNote] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [sendEmailOnIssue, setSendEmailOnIssue] = useState(true);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const [previewMeta, setPreviewMeta] = useState<{
+    visaNumber: string;
+    applicantEmail: string;
+    applicantName: string;
+  } | null>(null);
   const [embassyChoices, setEmbassyChoices] = useState<Embassy[]>([]);
   const [embassyChoicesLoading, setEmbassyChoicesLoading] = useState(false);
   const [selectedEmbassyId, setSelectedEmbassyId] = useState('');
@@ -77,6 +95,7 @@ export function ApplicationDetail() {
   const [embassyChatSending, setEmbassyChatSending] = useState(false);
   const [embassyChatError, setEmbassyChatError] = useState('');
   const embassyMessagesRef = useRef<HTMLDivElement | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -96,6 +115,12 @@ export function ApplicationDetail() {
     setLoading(true);
     void load();
   }, [load]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -192,6 +217,10 @@ export function ApplicationDetail() {
     current.status === 'documents_required';
   const canReject = current.allowedNextStatuses?.includes('rejected');
   const canSendEmbassy = current.allowedNextStatuses?.includes('sent_to_embassy');
+  const canApprove = Boolean(canIssueVisa && current.allowedNextStatuses?.includes('approved'));
+  const canIssueOnly = Boolean(
+    canIssueVisa && (current.status === 'approved' || current.allowedNextStatuses?.includes('visa_issued'))
+  );
   const assignedEmbassyId = embassyIdOf(current.embassy);
 
   const age = current.personal?.dateOfBirth
@@ -253,6 +282,98 @@ export function ApplicationDetail() {
       setActionError(err instanceof ApiError ? err.message : 'Reject failed');
     } finally {
       setActionLoading(false);
+    }
+  }
+
+  function revokePreviewUrl() {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+  }
+
+  function closeIssueModal() {
+    setIssueOpen(false);
+    setPreviewError('');
+    setPreviewMeta(null);
+    setPreviewLoading(false);
+    revokePreviewUrl();
+  }
+
+  async function openIssueModal() {
+    if (!id) return;
+    setActionError('');
+    setPreviewError('');
+    setSendEmailOnIssue(true);
+    setIssueOpen(true);
+    setPreviewLoading(true);
+    revokePreviewUrl();
+    try {
+      const preview = await previewVisaPdf(id);
+      const url = URL.createObjectURL(preview.blob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+      setPreviewMeta({
+        visaNumber: preview.visaNumber,
+        applicantEmail: preview.applicantEmail,
+        applicantName: preview.applicantName,
+      });
+    } catch (err) {
+      setPreviewError(err instanceof ApiError ? err.message : 'Failed to generate visa preview');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function onSaveAndSendVisa(e: FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setActionLoading(true);
+    setActionError('');
+    try {
+      // Approve without auto-issue when still pending approval, then persist PDF + optional email.
+      if (current.status !== 'approved' && current.status !== 'visa_issued') {
+        await changeApplicationStatus(id, {
+          toStatus: 'approved',
+          note: 'Approved — issuing visa after preview',
+          autoIssueVisa: false,
+        });
+      }
+
+      await issueVisa({
+        applicationId: id,
+        sendEmail: sendEmailOnIssue,
+        force: current.status === 'visa_issued',
+      });
+
+      const fresh = await getApplication(id);
+      setApp(fresh.data);
+      closeIssueModal();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to save and send visa');
+      try {
+        const fresh = await getApplication(id);
+        setApp(fresh.data);
+      } catch {
+        /* keep current */
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  async function onDownloadDocument(documentId: string, fileName: string) {
+    try {
+      const { blob } = await downloadApplicationDocument(documentId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName || 'document.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Download failed');
     }
   }
 
@@ -389,6 +510,17 @@ export function ApplicationDetail() {
             </button>
           ) : null}
 
+          {canApprove || canIssueOnly ? (
+            <button
+              type="button"
+              className="app-detail__btn app-detail__btn--green"
+              onClick={() => void openIssueModal()}
+              disabled={actionLoading}
+            >
+              {canApprove ? 'Approve & issue visa' : 'Issue visa'}
+            </button>
+          ) : null}
+
           {canSendEmbassy ? (
             <button
               type="button"
@@ -485,11 +617,44 @@ export function ApplicationDetail() {
                     <strong>{doc.label || doc.originalName}</strong>
                     <span>
                       {doc.category.replaceAll('_', ' ')} · {formatDate(doc.createdAt)}
+                      {doc.key === 'issued_visa' && current.issuedVisa?.visaNumber
+                        ? ` · ${current.issuedVisa.visaNumber}`
+                        : ''}
                     </span>
                   </div>
-                  <span className="app-detail__req-status app-detail__req-status--received">Received</span>
+                  <div className="app-detail__doc-actions">
+                    {doc.mimeType === 'application/pdf' || doc.key === 'issued_visa' ? (
+                      <button
+                        type="button"
+                        className="app-detail__doc-dl"
+                        onClick={() =>
+                          void onDownloadDocument(doc._id, doc.originalName || `${doc.label}.pdf`)
+                        }
+                      >
+                        <Download size={14} />
+                        Download
+                      </button>
+                    ) : (
+                      <span className="app-detail__req-status app-detail__req-status--received">
+                        Received
+                      </span>
+                    )}
+                  </div>
                 </div>
               ))}
+
+              {current.issuedVisa?.visaNumber &&
+              !uploaded.some((d) => d.key === 'issued_visa') ? (
+                <div className="app-detail__doc-row">
+                  <div>
+                    <strong>Issued Visa</strong>
+                    <span>visa document · {current.issuedVisa.visaNumber}</span>
+                  </div>
+                  <span className="app-detail__req-status app-detail__req-status--uploaded">
+                    Issued
+                  </span>
+                </div>
+              ) : null}
             </div>
           </section>
 
@@ -804,6 +969,83 @@ export function ApplicationDetail() {
               disabled={actionLoading || !rejectReason.trim()}
             >
               {actionLoading ? 'Rejecting…' : 'Reject visa'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={issueOpen}
+        title={canApprove ? 'Approve & issue visa' : 'Issue visa'}
+        onClose={closeIssueModal}
+        className="modal--visa-preview"
+      >
+        <form className="modal-form visa-issue-preview" onSubmit={(e) => void onSaveAndSendVisa(e)}>
+          {actionError ? <div className="modal-form__error">{actionError}</div> : null}
+
+          <p className="visa-issue-preview__meta">
+            Preview the PDF first. Saving stores it on the application document panel
+            {sendEmailOnIssue ? ' and emails the applicant' : ''}.
+          </p>
+
+          <div className="visa-issue-preview__frame-wrap">
+            {previewLoading ? (
+              <div className="visa-issue-preview__loading">Generating visa PDF preview…</div>
+            ) : null}
+            {previewError ? <div className="visa-issue-preview__error">{previewError}</div> : null}
+            {!previewLoading && previewUrl ? (
+              <iframe
+                className="visa-issue-preview__frame"
+                title="Visa PDF preview"
+                src={previewUrl}
+              />
+            ) : null}
+          </div>
+
+          {previewMeta ? (
+            <p className="visa-issue-preview__meta">
+              Preview for <strong>{previewMeta.applicantName || 'applicant'}</strong>
+              {previewMeta.applicantEmail ? (
+                <>
+                  {' '}
+                  · <strong>{previewMeta.applicantEmail}</strong>
+                </>
+              ) : null}
+              {previewMeta.visaNumber ? (
+                <>
+                  {' '}
+                  · draft no. <strong>{previewMeta.visaNumber}</strong>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+
+          <label className="visa-issue-preview__check">
+            <input
+              type="checkbox"
+              checked={sendEmailOnIssue}
+              onChange={(e) => setSendEmailOnIssue(e.target.checked)}
+            />
+            <span>
+              Send issued visa PDF notification to the applicant
+              {previewMeta?.applicantEmail ? ` (${previewMeta.applicantEmail})` : ''}
+            </span>
+          </label>
+
+          <div className="modal-form__actions">
+            <button type="button" className="is-ghost" onClick={closeIssueModal} disabled={actionLoading}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="is-primary"
+              disabled={actionLoading || previewLoading || !previewUrl || Boolean(previewError)}
+            >
+              {actionLoading
+                ? 'Saving…'
+                : sendEmailOnIssue
+                  ? 'Save & send'
+                  : 'Save to documents'}
             </button>
           </div>
         </form>

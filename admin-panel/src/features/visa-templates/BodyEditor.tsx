@@ -1,6 +1,11 @@
-import { GripVertical, QrCode } from 'lucide-react';
+import { GripVertical, User } from 'lucide-react';
 import { useState } from 'react';
-import type { TemplatePlaceholder, VisaTemplate } from './types';
+import {
+  DEFAULT_WATERMARK,
+  PREVIEW_VALUES,
+  type TemplatePlaceholder,
+  type VisaTemplate,
+} from './types';
 
 type Props = {
   body: VisaTemplate['body'];
@@ -24,50 +29,77 @@ export function BodyEditor({ body, accentColor, fontSize, previewMode, onChange 
     onChange({ ...body, placeholders: list });
   }
 
-  function onDragStart(id: string) {
-    setDragId(id);
-  }
-
   function onDrop(target: TemplatePlaceholder) {
     if (dragId) reorder(dragId, target.id);
     setDragId(null);
   }
 
-  return (
-    <section id="vt-section-body" className="vt-section" data-section="body">
-      <div className="vt-section__label">Body</div>
-      <div className="vt-a4-body">
-        <p className="vt-a4-body-hint" style={{ fontSize: fontSize - 1 }}>
-          {previewMode
-            ? 'Applicant details will render into these fields.'
-            : 'Drag chips to reorder dynamic placeholders.'}
-        </p>
-        <ul className="vt-chips">
-          {body.placeholders.map((ph) => (
-            <li key={ph.id}>
-              <button
-                type="button"
-                className={`vt-chip${dragId === ph.id ? ' is-dragging' : ''}`}
-                style={{ borderColor: accentColor, color: accentColor, fontSize }}
-                draggable={!previewMode}
-                onDragStart={() => onDragStart(ph.id)}
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={()  => onDrop(ph)}
-                onDragEnd={() => setDragId(null)}
-              >
-                {!previewMode ? <GripVertical size={14} aria-hidden /> : null}
-                {ph.label}
-              </button>
-            </li>
-          ))}
-        </ul>
+  const visaNumber = PREVIEW_VALUES.visa_number;
 
-        {body.showQr ? (
-          <div className="vt-qr" style={{ borderColor: accentColor }}>
-            <QrCode size={28} strokeWidth={1.5} style={{ color: accentColor }} />
-            <span style={{ fontSize: fontSize - 2 }}>QR / barcode</span>
+  return (
+    <section id="vt-section-body" className="vt-section vt-section--body" data-section="body">
+      {!previewMode ? <div className="vt-section__label">Body</div> : null}
+
+      <div className="vt-evisa-body">
+        <div className="vt-evisa-watermark" aria-hidden>
+          <img src={DEFAULT_WATERMARK} alt="" />
+        </div>
+
+        <div className="vt-evisa-main">
+          <div className="vt-evisa-fields" style={{ fontSize }}>
+            {!previewMode ? (
+              <p className="vt-evisa-fields-hint">Drag rows to reorder fields</p>
+            ) : null}
+            <ul className="vt-evisa-field-list">
+              {body.placeholders.map((ph) => {
+                const value = previewMode ? PREVIEW_VALUES[ph.key] || `/{${ph.key}}` : `{${ph.key}}`;
+                return (
+                  <li
+                    key={ph.id}
+                    className={`vt-evisa-field${dragId === ph.id ? ' is-dragging' : ''}${previewMode ? ' is-preview' : ''}`}
+                    draggable={!previewMode}
+                    onDragStart={() => setDragId(ph.id)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => onDrop(ph)}
+                    onDragEnd={() => setDragId(null)}
+                  >
+                    <span className="vt-evisa-field__grip" aria-hidden>
+                      {!previewMode ? <GripVertical size={14} /> : null}
+                    </span>
+                    <strong className="vt-evisa-field__label">{ph.label}</strong>
+                    <span className="vt-evisa-field__value">{value}</span>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
-        ) : null}
+
+          <aside className="vt-evisa-side">
+            {body.showPhoto ? (
+              <div className="vt-evisa-photo" style={{ borderColor: accentColor }}>
+                <User size={36} strokeWidth={1.25} />
+                <span>Photo</span>
+              </div>
+            ) : null}
+
+            {body.showQr ? (
+              <div className="vt-evisa-barcode" style={{ borderColor: accentColor }}>
+                <div className="vt-evisa-barcode__bars" aria-hidden>
+                  {Array.from({ length: 28 }).map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: i % 5 === 0 ? 2.5 : i % 3 === 0 ? 1.5 : 1,
+                        opacity: 0.85,
+                      }}
+                    />
+                  ))}
+                </div>
+                <p className="vt-evisa-barcode__number">{visaNumber}</p>
+              </div>
+            ) : null}
+          </aside>
+        </div>
       </div>
     </section>
   );

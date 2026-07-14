@@ -551,18 +551,70 @@ Each resource supports:
 | `GET` | `/issued-visas` | Search issued visas |
 | `GET` | `/issued-visas/:id` | Detail |
 | `GET` | `/issued-visas/:id/download` | Download PDF |
-| `POST` | `/issued-visas/issue` | Manually generate visa for approved app |
+| `POST` | `/issued-visas/preview` | Generate PDF preview (no save / email / status change) |
+| `POST` | `/issued-visas/issue` | Persist visa PDF to application documents (+ optional email) |
 | `GET` | `/issued-visas/export` | CSV export |
-| `GET` | `/visa-templates` | List templates |
-| `GET` | `/visa-templates/:id` | Template detail |
-| `PUT` | `/visa-templates` | Create/update template (upsert by `code`) |
+| `GET` | `/visa-templates` | List active templates (expect one: `evisa_default`) |
+| `GET` | `/visa-templates/default` | Get the single production eVISA template |
+| `GET` | `/visa-templates/:id` | Template detail (`id`, `default`, or `evisa_default`) |
+| `PUT` | `/visa-templates` | Upsert the eVISA template (by `code`; deactivates others) |
+
+**Product rule:** There is **one** active template (`code: evisa_default`). Layout is shared; body fields are stored per visa type under `fieldsByVisaType` (`tourist` \| `business` \| `student` \| `transit`). Approving/issuing a visa maps `application.visaTypeCode` → that key and draws only those fields on the PDF.
+
+**Admin approve flow (preview → save & send):**
+1. `POST /issued-visas/preview` `{ "applicationId": "..." }` → PDF bytes (inline)
+2. `POST /applications/:id/status` `{ "toStatus": "approved", "autoIssueVisa": false }` (skip auto-issue)
+3. `POST /issued-visas/issue` `{ "applicationId": "...", "sendEmail": true }` → saves `ApplicationDocument` (`key: issued_visa`, visible to applicant), upserts `IssuedVisa`, status → `visa_issued`, optional email
+
+**Preview** (no DB write beyond reading the app/template):
+```json
+{ "applicationId": "..." }
+```
+
+**Issue:**
+```json
+{ "applicationId": "...", "force": false, "sendEmail": true }
+```
+
+**Upsert body (admin Template Designer):**
+```json
+{
+  "code": "evisa_default",
+  "name": "Salaam eVISA Template",
+  "activeVisaType": "tourist",
+  "placeholders": [{ "key": "applicant_name", "label": "Full Name" }],
+  "fieldsByVisaType": {
+    "tourist": [{ "key": "applicant_name", "label": "Full Name" }],
+    "business": [{ "key": "applicant_name", "label": "Full Name" }],
+    "student": [{ "key": "applicant_name", "label": "Full Name" }],
+    "transit": [{ "key": "applicant_name", "label": "Full Name" }]
+  },
+  "layout": {
+    "govLine": "ISLAMIC EMIRATE OF AFGHANISTAN",
+    "ministryLine": "Ministry of Foreign Affairs",
+    "systemLine": "Salaam Afghanistan — Electronic Visa System",
+    "sectionTitle": "eVISA Holder Information",
+    "accentColor": "#1B4D45",
+    "fontSize": 11,
+    "salaamLogoUrl": "/Logo.png",
+    "embassyLogoUrl": "/taliban-flag.png",
+    "disclaimer": "...",
+    "showPhoto": true,
+    "showPageNumbers": false
+  },
+  "includeQr": true,
+  "includeBarcode": true,
+  "isDefault": true,
+  "isActive": true
+}
+```
 
 **Manual issue:**
 ```json
-{ "applicationId": "...", "force": false }
+{ "applicationId": "...", "force": false, "sendEmail": true }
 ```
 
-Note: Approving an application (`toStatus: "approved"`) usually **auto-generates** the visa PDF when settings allow it.
+Note: Embassy approve still auto-generates when `autoGenerateVisaOnApprove` is true. Admin Application Detail uses preview-first with `autoIssueVisa: false`.
 
 ---
 

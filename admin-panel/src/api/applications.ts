@@ -77,6 +77,14 @@ export type ApplicationDetail = ApplicationListItem & {
   documentRequestNote?: string;
   rejectionReason?: string;
   allowedNextStatuses?: ApplicationStatus[];
+  issuedVisa?: {
+    _id: string;
+    visaNumber?: string;
+    validFrom?: string;
+    validUntil?: string;
+    issuedAt?: string;
+    storagePath?: string;
+  } | null;
   activity?: Array<{
     action: string;
     note?: string;
@@ -116,12 +124,22 @@ export async function getApplication(id: string) {
 
 export async function changeApplicationStatus(
   id: string,
-  body: { toStatus: ApplicationStatus; note?: string; embassy?: string; meta?: unknown }
+  body: {
+    toStatus: ApplicationStatus;
+    note?: string;
+    embassy?: string;
+    meta?: unknown;
+    autoIssueVisa?: boolean;
+    sendEmail?: boolean;
+  }
 ) {
-  return apiFetch<{ application: ApplicationDetail }>(`/applications/${id}/status`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  return apiFetch<{ application: ApplicationDetail; issuedVisa?: unknown }>(
+    `/applications/${id}/status`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  );
 }
 
 export async function requestDocuments(

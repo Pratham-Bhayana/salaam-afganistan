@@ -247,9 +247,14 @@ mountConfigCrud('fee-rules', feeRules, PERMISSIONS.FEES_CONTENT_MANAGE);
 // ─── Issued visas + templates (8.9 / 8.11) ───────────────────────────────────
 router.get('/issued-visas', requirePermission(PERMISSIONS.VISAS_ISSUED_MANAGE), issuedVisaController.listIssued);
 router.get('/issued-visas/export', requirePermission(PERMISSIONS.RECORDS_EXPORT), issuedVisaController.exportIssuedCsv);
+router.post(
+  '/issued-visas/preview',
+  requireAnyPermission(PERMISSIONS.VISAS_ISSUED_MANAGE, PERMISSIONS.APPLICATIONS_STATUS),
+  issuedVisaController.previewVisa
+);
+router.post('/issued-visas/issue', requirePermission(PERMISSIONS.VISAS_ISSUED_MANAGE), issuedVisaController.issueNow);
 router.get('/issued-visas/:id', requirePermission(PERMISSIONS.VISAS_ISSUED_MANAGE), issuedVisaController.getIssued);
 router.get('/issued-visas/:id/download', requirePermission(PERMISSIONS.VISAS_ISSUED_MANAGE), issuedVisaController.downloadIssued);
-router.post('/issued-visas/issue', requirePermission(PERMISSIONS.VISAS_ISSUED_MANAGE), issuedVisaController.issueNow);
 
 router.get('/visa-templates', requirePermission(PERMISSIONS.TEMPLATES_MANAGE), issuedVisaController.listTemplates);
 router.get('/visa-templates/:id', requirePermission(PERMISSIONS.TEMPLATES_MANAGE), issuedVisaController.getTemplate);

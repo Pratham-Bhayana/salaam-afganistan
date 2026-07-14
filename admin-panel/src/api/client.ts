@@ -150,6 +150,37 @@ export async function apiFetch<T>(
   return { data: json.data, meta: json.meta };
 }
 
+/** Fetch binary responses (PDF downloads / previews). */
+export async function apiFetchBlob(
+  path: string,
+  options: RequestInit = {},
+  retry = true
+): Promise<{ blob: Blob; headers: Headers }> {
+  const headers = new Headers(options.headers || {});
+  if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  const token = getAccessToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+
+  const res = await fetch(`${ADMIN_PREFIX}${path}`, { ...options, headers });
+
+  if (res.status === 401 && retry) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) return apiFetchBlob(path, options, false);
+    clearSession();
+    throw new ApiError(401, 'Session expired. Please sign in again.');
+  }
+
+  if (!res.ok) {
+    const json = (await res.json().catch(() => null)) as ApiFailure | null;
+    throw new ApiError(res.status, json?.message || `Request failed (${res.status})`, json?.details);
+  }
+
+  return { blob: await res.blob(), headers: res.headers };
+}
+
 export async function loginAdmin(email: string, password: string) {
   const res = await fetch(`${ADMIN_PREFIX}/auth/login`, {
     method: 'POST',

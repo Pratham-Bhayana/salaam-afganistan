@@ -1,5 +1,9 @@
-import { ImagePlus } from 'lucide-react';
-import type { VisaTemplate } from './types';
+import { ImagePlus, RotateCcw } from 'lucide-react';
+import {
+  DEFAULT_EMBASSY_LOGO,
+  DEFAULT_SALAAM_LOGO,
+  type VisaTemplate,
+} from './types';
 
 type Props = {
   header: VisaTemplate['header'];
@@ -18,74 +22,121 @@ function readFileAsDataUrl(file: File): Promise<string> {
   });
 }
 
+function resolveLogo(url: string | null, fallback: string) {
+  return url || fallback;
+}
+
 export function HeaderEditor({ header, accentColor, fontSize, previewMode, onChange }: Props) {
-  async function onLogoChange(
-    field: 'salaamLogoUrl' | 'embassyLogoUrl',
-    file: File | null
-  ) {
+  async function onLogoChange(field: 'salaamLogoUrl' | 'embassyLogoUrl', file: File | null) {
     if (!file) {
-      onChange({ ...header, [field]: null });
+      onChange({
+        ...header,
+        [field]: field === 'salaamLogoUrl' ? DEFAULT_SALAAM_LOGO : DEFAULT_EMBASSY_LOGO,
+      });
       return;
     }
     const url = await readFileAsDataUrl(file);
     onChange({ ...header, [field]: url });
   }
 
+  function resetLogo(field: 'salaamLogoUrl' | 'embassyLogoUrl') {
+    onChange({
+      ...header,
+      [field]: field === 'salaamLogoUrl' ? DEFAULT_SALAAM_LOGO : DEFAULT_EMBASSY_LOGO,
+    });
+  }
+
+  const salaamSrc = resolveLogo(header.salaamLogoUrl, DEFAULT_SALAAM_LOGO);
+  const embassySrc = resolveLogo(header.embassyLogoUrl, DEFAULT_EMBASSY_LOGO);
+
   return (
     <section id="vt-section-header" className="vt-section" data-section="header">
-      <div className="vt-section__label">Header</div>
-      <div className="vt-a4-header" style={{ borderBottomColor: accentColor }}>
-        <div className="vt-a4-logos">
-          {(['salaamLogoUrl', 'embassyLogoUrl'] as const).map((field) => {
-            const label = field === 'salaamLogoUrl' ? 'Salaam logo' : 'Embassy logo';
-            const url = header[field];
-            return (
-              <label key={field} className={`vt-logo-slot${previewMode ? ' is-preview' : ''}`}>
-                {url ? (
-                  <img src={url} alt={label} />
-                ) : (
-                  <span>
-                    {!previewMode ? <ImagePlus size={16} /> : null}
-                    {label}
-                  </span>
-                )}
+      {!previewMode ? <div className="vt-section__label">Header</div> : null}
+
+      <div className="vt-evisa-header">
+        <div className="vt-evisa-logos">
+          {(
+            [
+              { field: 'salaamLogoUrl' as const, src: salaamSrc, label: 'Raizing / Salaam logo' },
+              { field: 'embassyLogoUrl' as const, src: embassySrc, label: 'State emblem' },
+            ] as const
+          ).map(({ field, src, label }) => (
+            <div key={field} className="vt-evisa-logo-wrap">
+              <label className={`vt-evisa-logo${previewMode ? ' is-preview' : ''}`}>
+                <img src={src} alt={label} />
                 {!previewMode ? (
                   <input
                     type="file"
                     accept="image/*"
+                    aria-label={`Replace ${label}`}
                     onChange={(e) => void onLogoChange(field, e.target.files?.[0] ?? null)}
                   />
                 ) : null}
+                {!previewMode ? (
+                  <span className="vt-evisa-logo__hint">
+                    <ImagePlus size={14} />
+                    Replace
+                  </span>
+                ) : null}
               </label>
-            );
-          })}
+              {!previewMode ? (
+                <button
+                  type="button"
+                  className="vt-evisa-logo-reset"
+                  onClick={() => resetLogo(field)}
+                  title="Reset to default logo"
+                >
+                  <RotateCcw size={12} />
+                  Default
+                </button>
+              ) : null}
+            </div>
+          ))}
         </div>
 
-        {previewMode ? (
-          <>
-            <h2 className="vt-a4-title" style={{ color: accentColor, fontSize: fontSize + 4 }}>
-              {header.title}
-            </h2>
-            <p className="vt-a4-address" style={{ fontSize }}>{header.addressLine}</p>
-          </>
-        ) : (
-          <>
+        <div className="vt-evisa-authority" style={{ fontSize }}>
+          {previewMode ? (
+            <>
+              <p className="vt-evisa-gov">{header.govLine}</p>
+              <p className="vt-evisa-ministry">{header.ministryLine}</p>
+              <p className="vt-evisa-system">{header.systemLine}</p>
+            </>
+          ) : (
+            <>
+              <input
+                className="vt-evisa-gov-input"
+                value={header.govLine}
+                onChange={(e) => onChange({ ...header, govLine: e.target.value })}
+                aria-label="Government line"
+              />
+              <input
+                className="vt-evisa-ministry-input"
+                value={header.ministryLine}
+                onChange={(e) => onChange({ ...header, ministryLine: e.target.value })}
+                aria-label="Ministry line"
+              />
+              <input
+                className="vt-evisa-system-input"
+                value={header.systemLine}
+                onChange={(e) => onChange({ ...header, systemLine: e.target.value })}
+                aria-label="System line"
+              />
+            </>
+          )}
+        </div>
+
+        <div className="vt-evisa-section-title" style={{ borderBottomColor: accentColor }}>
+          {previewMode ? (
+            <h2 style={{ fontSize: fontSize + 3 }}>{header.sectionTitle}</h2>
+          ) : (
             <input
-              className="vt-a4-title-input"
-              style={{ color: accentColor, fontSize: fontSize + 4 }}
-              value={header.title}
-              onChange={(e) => onChange({ ...header, title: e.target.value })}
-              aria-label="Template title"
+              value={header.sectionTitle}
+              onChange={(e) => onChange({ ...header, sectionTitle: e.target.value })}
+              style={{ fontSize: fontSize + 3 }}
+              aria-label="Section title"
             />
-            <input
-              className="vt-a4-address-input"
-              style={{ fontSize }}
-              value={header.addressLine}
-              onChange={(e) => onChange({ ...header, addressLine: e.target.value })}
-              aria-label="Address and contact line"
-            />
-          </>
-        )}
+          )}
+        </div>
       </div>
     </section>
   );

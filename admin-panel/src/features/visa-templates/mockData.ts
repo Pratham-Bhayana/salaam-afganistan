@@ -1,4 +1,14 @@
-import { createEmptyTemplate, type VisaTemplate } from './types';
+import {
+  createEmptyTemplate,
+  DEFAULT_EMBASSY_LOGO,
+  DEFAULT_SALAAM_LOGO,
+  type VisaTemplate,
+} from './types';
+
+const defaultLogos = {
+  salaamLogoUrl: DEFAULT_SALAAM_LOGO,
+  embassyLogoUrl: DEFAULT_EMBASSY_LOGO,
+};
 
 export const MOCK_TEMPLATES: VisaTemplate[] = [
   createEmptyTemplate({
@@ -12,8 +22,11 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     header: {
       title: 'Islamic Emirate of Afghanistan — Tourist Visa',
       addressLine: 'Salaam Afghanistan · Consular Processing Center',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
   createEmptyTemplate({
@@ -27,8 +40,11 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     header: {
       title: 'Islamic Emirate of Afghanistan — Business Visa',
       addressLine: 'Ministry of Foreign Affairs · Commercial Affairs Desk',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
   createEmptyTemplate({
@@ -42,8 +58,11 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     header: {
       title: 'Islamic Emirate of Afghanistan — Student Visa',
       addressLine: 'Education & Cultural Affairs · Kabul',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
   createEmptyTemplate({
@@ -57,8 +76,11 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     header: {
       title: 'Transit Authorization',
       addressLine: 'Border & Airport Control · Kabul International',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
   createEmptyTemplate({
@@ -69,12 +91,15 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     isDefault: false,
     updatedAt: '2026-07-10',
     accentColor: '#1B4D45',
-    fontSize: 15,
+    fontSize: 14,
     header: {
       title: 'Islamic Emirate of Afghanistan — Premium Tourist Visa',
       addressLine: 'Salaam Afghanistan · Priority Consular Lane',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
   createEmptyTemplate({
@@ -88,8 +113,11 @@ export const MOCK_TEMPLATES: VisaTemplate[] = [
     header: {
       title: 'Diplomatic Mission — Business Visa',
       addressLine: 'Afghan Embassy Consular Section',
-      salaamLogoUrl: null,
-      embassyLogoUrl: null,
+      govLine: 'ISLAMIC EMIRATE OF AFGHANISTAN',
+      ministryLine: 'Ministry of Foreign Affairs',
+      systemLine: 'Salaam Afghanistan — Electronic Visa System',
+      sectionTitle: 'eVISA Holder Information',
+      ...defaultLogos,
     },
   }),
 ];

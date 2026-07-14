@@ -16,9 +16,75 @@
   overflow: hidden;
 }
 
-.modal.modal--wide {
-  width: min(720px, 100%);
+.modal.modal--visa-preview {
+  width: min(860px, 100%);
+  max-height: min(92vh, 960px);
+  display: flex;
+  flex-direction: column;
 }
+
+.modal.modal--visa-preview .modal__body {
+  overflow: auto;
+  flex: 1;
+}
+
+.visa-issue-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visa-issue-preview__frame-wrap {
+  border: 1px solid rgba(26, 46, 40, 0.12);
+  border-radius: 12px;
+  background: #eceae5;
+  min-height: 420px;
+  overflow: hidden;
+}
+
+.visa-issue-preview__frame {
+  width: 100%;
+  height: min(58vh, 560px);
+  border: 0;
+  background: #fff;
+}
+
+.visa-issue-preview__meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+  line-height: 1.45;
+}
+
+.visa-issue-preview__meta strong {
+  color: var(--ink);
+}
+
+.visa-issue-preview__check {
+  display: flex;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.visa-issue-preview__check input {
+  margin-top: 3px;
+}
+
+.visa-issue-preview__loading,
+.visa-issue-preview__error {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+.visa-issue-preview__error {
+  color: #8f2a2a;
+}
+
 
 .modal__header {
   display: flex;

@@ -39,6 +39,7 @@ export default function App() {
             <Route path="records" element={<Records />} />
             <Route path="visa-templates" element={<TemplateList />} />
             <Route path="visa-templates/new" element={<TemplateBuilder />} />
+            <Route path="visa-templates/default" element={<TemplateBuilder />} />
             <Route path="visa-templates/:id" element={<TemplateBuilder />} />
             <Route path="staff" element={<Staff />} />
             <Route path="chat" element={<Chat />} />

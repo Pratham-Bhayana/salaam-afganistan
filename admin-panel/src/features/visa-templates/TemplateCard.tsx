@@ -1,14 +1,18 @@
-import { MoreHorizontal, Copy, Pencil, Star, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Pencil } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { VISA_TYPE_LABELS, type VisaTemplate } from './types';
+import {
+  DEFAULT_EMBASSY_LOGO,
+  DEFAULT_SALAAM_LOGO,
+  DEFAULT_WATERMARK,
+  PREVIEW_VALUES,
+  VISA_TYPE_LABELS,
+  type VisaTemplate,
+} from './types';
 
 type Props = {
   template: VisaTemplate;
-  onDuplicate: (id: string) => void;
-  onSetDefault: (id: string) => void;
-  onDelete: (id: string) => void;
 };
 
 function formatDate(iso: string) {
@@ -23,7 +27,62 @@ function formatDate(iso: string) {
   }
 }
 
-export function TemplateCard({ template, onDuplicate, onSetDefault, onDelete }: Props) {
+function MiniPreview({ template }: { template: VisaTemplate }) {
+  const { header, body, footer } = template;
+  const salaamLogo = header.salaamLogoUrl || DEFAULT_SALAAM_LOGO;
+  const embassyLogo = header.embassyLogoUrl || DEFAULT_EMBASSY_LOGO;
+  const fields = (body.placeholders || []).slice(0, 8);
+
+  return (
+    <div className="vt-card__a4" style={{ borderColor: template.accentColor }}>
+      <div className="vt-card__a4-logos">
+        <img src={salaamLogo} alt="" />
+        <img src={embassyLogo} alt="" />
+      </div>
+
+      <div className="vt-card__a4-auth">
+        <p className="vt-card__a4-gov">{header.govLine}</p>
+        <p>{header.ministryLine}</p>
+        <p>{header.systemLine}</p>
+      </div>
+
+      <p className="vt-card__a4-section">{header.sectionTitle}</p>
+
+      <div className="vt-card__a4-body">
+        <div className="vt-card__a4-watermark" aria-hidden>
+          <img src={DEFAULT_WATERMARK} alt="" />
+        </div>
+
+        <div className="vt-card__a4-main">
+          <ul className="vt-card__a4-fields">
+            {fields.map((ph) => (
+              <li key={ph.id}>
+                <strong>{ph.label}</strong>
+                <span>{PREVIEW_VALUES[ph.key] || `{${ph.key}}`}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="vt-card__a4-side">
+            {body.showPhoto ? <div className="vt-card__a4-photo" /> : null}
+            {body.showQr ? (
+              <div className="vt-card__a4-barcode">
+                <div className="vt-card__a4-bars" aria-hidden />
+                <em>{PREVIEW_VALUES.visa_number}</em>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="vt-card__a4-disclaimer">
+        <strong>DISCLAIMER:</strong>
+        <span>{footer.disclaimer}</span>
+      </div>
+    </div>
+  );
+}
+
+export function TemplateCard({ template }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -48,16 +107,7 @@ export function TemplateCard({ template, onDuplicate, onSetDefault, onDelete }: 
       transition={{ duration: 0.22 }}
     >
       <Link to={`/visa-templates/${template.id}`} className="vt-card__preview" tabIndex={-1}>
-        <div className="vt-card__a4" style={{ borderColor: template.accentColor }}>
-          <div className="vt-card__a4-header" style={{ background: template.accentColor }} />
-          <div className="vt-card__a4-lines" aria-hidden>
-            <span />
-            <span />
-            <span />
-            <span />
-          </div>
-          <div className="vt-card__a4-qr" aria-hidden />
-        </div>
+        <MiniPreview template={template} />
       </Link>
 
       <div className="vt-card__body">
@@ -94,43 +144,6 @@ export function TemplateCard({ template, onDuplicate, onSetDefault, onDelete }: 
                     <Pencil size={14} />
                     Edit
                   </Link>
-                  <button
-                    type="button"
-                    className="vt-card__dropdown-item"
-                    role="menuitem"
-                    onClick={() => {
-                      onDuplicate(template.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Copy size={14} />
-                    Duplicate
-                  </button>
-                  <button
-                    type="button"
-                    className="vt-card__dropdown-item"
-                    role="menuitem"
-                    disabled={template.isDefault}
-                    onClick={() => {
-                      onSetDefault(template.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Star size={14} />
-                    Set as Default
-                  </button>
-                  <button
-                    type="button"
-                    className="vt-card__dropdown-item vt-card__dropdown-item--danger"
-                    role="menuitem"
-                    onClick={() => {
-                      onDelete(template.id);
-                      setMenuOpen(false);
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
                 </motion.div>
               ) : null}
             </AnimatePresence>

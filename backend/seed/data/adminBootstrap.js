@@ -41,25 +41,11 @@ const defaultEmailTemplates = [
   },
 ];
 
-const defaultVisaTemplate = {
-  code: 'default_visa',
-  name: 'Default Visa Template',
-  description: 'Production baseline template used when no custom design is set',
-  pageWidth: 595,
-  pageHeight: 842,
-  includeQr: true,
-  includeBarcode: false,
-  isDefault: true,
-  isActive: true,
-  placeholders: [
-    { key: 'fullName', label: 'Full Name', x: 72, y: 200, fontSize: 14 },
-    { key: 'passportNumber', label: 'Passport Number', x: 72, y: 230, fontSize: 12 },
-    { key: 'visaNumber', label: 'Visa Number', x: 72, y: 260, fontSize: 12 },
-    { key: 'nationality', label: 'Nationality', x: 72, y: 290, fontSize: 12 },
-    { key: 'validFrom', label: 'Valid From', x: 72, y: 320, fontSize: 12 },
-    { key: 'validUntil', label: 'Valid Until', x: 72, y: 350, fontSize: 12 },
-  ],
-};
+const {
+  defaultEvisaTemplateSeed,
+} = require('../../src/services/evisaTemplateConfig');
+
+const defaultVisaTemplate = defaultEvisaTemplateSeed;
 
 module.exports = {
   defaultSuperAdmin,
