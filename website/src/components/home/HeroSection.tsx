@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { APPLYING_FROM_OPTIONS, HERO_SLIDES } from "@/data/home";
@@ -12,7 +13,7 @@ export function HeroSection() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       setSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 10000);
+    }, 7000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -78,7 +79,8 @@ export function HeroSection() {
               key={item.id}
               className={`${styles.slide} ${index === slideIndex ? styles.slideActive : ""}`}
               style={{
-                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0.72) 100%), url(${item.imageSrc})`,
+                backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.75) 100%), url(${item.imageSrc})`,
+                backgroundColor: "#1a1a1a",
               }}
               role="img"
               aria-label={item.imageAlt}
@@ -90,13 +92,26 @@ export function HeroSection() {
             <div className={styles.slideContent}>
               <h2>{slide.title}</h2>
               <p>{slide.description}</p>
+              <Link href={slide.ctaHref} className={`btn btn-primary ${styles.slideCta}`}>
+                {slide.ctaLabel}
+              </Link>
             </div>
           ) : null}
 
-          <button type="button" className={`${styles.navBtn} ${styles.prev}`} onClick={goPrev} aria-label="Previous slide">
+          <button
+            type="button"
+            className={`${styles.navBtn} ${styles.prev}`}
+            onClick={goPrev}
+            aria-label="Previous slide"
+          >
             <ChevronLeft size={20} />
           </button>
-          <button type="button" className={`${styles.navBtn} ${styles.next}`} onClick={goNext} aria-label="Next slide">
+          <button
+            type="button"
+            className={`${styles.navBtn} ${styles.next}`}
+            onClick={goNext}
+            aria-label="Next slide"
+          >
             <ChevronRight size={20} />
           </button>
 

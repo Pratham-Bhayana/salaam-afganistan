@@ -107,6 +107,10 @@
   line-height: 1.75;
 }
 
+.contentCol .section-heading p + p {
+  margin-top: 0.85rem;
+}
+
 @media (min-width: 992px) {
   .section {
     margin: 0 1rem;

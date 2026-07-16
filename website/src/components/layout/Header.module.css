@@ -91,6 +91,47 @@
   background: var(--color-gray-800);
 }
 
+.authBlock {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.userLabel {
+  display: none;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-gray-800);
+}
+
+.logoutBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--color-white);
+  color: var(--color-black);
+  border: 1px solid var(--color-gray-300);
+  border-radius: 8px;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.logoutBtn:hover:not(:disabled) {
+  background: var(--color-gray-100);
+  border-color: var(--color-gray-400);
+}
+
+.logoutBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 .navbar {
   display: flex;
   align-items: center;
@@ -279,6 +320,10 @@
 
   .metaItem {
     display: inline-flex;
+  }
+
+  .userLabel {
+    display: inline;
   }
 
   .navbar {

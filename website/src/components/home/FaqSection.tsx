@@ -10,7 +10,7 @@ export function FaqSection() {
   const [openId, setOpenId] = useState<string>(FAQS[0]?.id ?? "");
 
   return (
-    <section className={styles.section}>
+    <section className={styles.section} id="faq">
       <div className="divider" />
       <div className="container">
         <div className={styles.grid}>
@@ -19,12 +19,12 @@ export function FaqSection() {
               <span className="sub-title">Afghanistan Visa Information</span>
               <h2>Frequently Asked Questions</h2>
               <p>
-                Answers to common questions about Afghanistan visa requirements,
-                application steps, and travel preparedness.
+                Answers to common questions about Afghanistan visa eligibility, processing,
+                fees, and downloads.
               </p>
             </div>
-            <Link href="/contact" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
-              Ask Your Question
+            <Link href="/apply" className="btn btn-primary" style={{ marginTop: "1.5rem" }}>
+              Start Application
               <ArrowRight size={16} aria-hidden />
             </Link>
           </div>
@@ -51,7 +51,17 @@ export function FaqSection() {
                       }}
                     />
                   </button>
-                  {open ? <div className={styles.answer}>{item.answer}</div> : null}
+                  {open ? (
+                    <div className={styles.answer}>
+                      <p>{item.answer}</p>
+                      {item.linkHref && item.linkLabel ? (
+                        <Link href={item.linkHref} className={styles.answerLink}>
+                          {item.linkLabel}
+                          <ArrowRight size={14} aria-hidden />
+                        </Link>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

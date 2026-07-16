@@ -1,9 +1,6 @@
-/** Extra-slow ease — long soft start & finish */
-function easeInOutExpo(t: number): number {
-  if (t === 0 || t === 1) return t;
-  return t < 0.5
-    ? Math.pow(2, 20 * t - 10) / 2
-    : (2 - Math.pow(2, -20 * t + 10)) / 2;
+/** Snappy ease-out — quick travel, short soft landing */
+function easeOutCubic(t: number): number {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 export interface SmoothScrollOptions {
@@ -17,7 +14,7 @@ export function smoothScrollTo(
   target: number | HTMLElement,
   options: SmoothScrollOptions = {},
 ): void {
-  const duration = options.duration ?? 11000;
+  const duration = options.duration ?? 900;
   const container = options.container ?? window;
 
   const getScrollTop = () =>
@@ -51,7 +48,7 @@ export function smoothScrollTo(
   function step(timestamp: number) {
     if (startTime === null) startTime = timestamp;
     const progress = Math.min((timestamp - startTime) / duration, 1);
-    setScrollTop(start + distance * easeInOutExpo(progress));
+    setScrollTop(start + distance * easeOutCubic(progress));
     if (progress < 1) requestAnimationFrame(step);
   }
 
@@ -62,7 +59,7 @@ export function smoothScrollBy(
   delta: number,
   options: SmoothScrollOptions = {},
 ): void {
-  const duration = options.duration ?? 9000;
+  const duration = options.duration ?? 900;
   const axis = options.axis ?? "y";
   const container = options.container ?? window;
 
@@ -93,7 +90,7 @@ export function smoothScrollBy(
   function step(timestamp: number) {
     if (startTime === null) startTime = timestamp;
     const progress = Math.min((timestamp - startTime) / duration, 1);
-    setPos(start + distance * easeInOutExpo(progress));
+    setPos(start + distance * easeOutCubic(progress));
     if (progress < 1) requestAnimationFrame(step);
   }
 

@@ -29,7 +29,7 @@ export function BackToTop() {
         pointerEvents: visible ? "auto" : "none",
         visibility: visible ? "visible" : "hidden",
       }}
-      onClick={() => smoothScrollTo(0, { duration: 12000 })}
+      onClick={() => smoothScrollTo(0, { duration: 900 })}
     >
       <ArrowUp size={18} />
     </button>

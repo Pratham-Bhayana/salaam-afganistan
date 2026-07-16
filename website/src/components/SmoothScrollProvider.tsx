@@ -21,7 +21,7 @@ export function SmoothScrollProvider() {
       if (!el) return;
 
       event.preventDefault();
-      smoothScrollTo(el, { duration: 11000 });
+      smoothScrollTo(el, { duration: 900 });
       history.pushState(null, "", hash);
     }
 

@@ -52,6 +52,25 @@
   line-height: 1.7;
 }
 
+.answer p {
+  margin: 0;
+}
+
+.answerLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  font-weight: 600;
+  color: var(--color-black);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.answerLink:hover {
+  opacity: 0.75;
+}
+
 @media (min-width: 992px) {
   .grid {
     grid-template-columns: 0.85fr 1.15fr;

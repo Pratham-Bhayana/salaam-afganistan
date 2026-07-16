@@ -23,10 +23,9 @@ export function OpportunitiesSection() {
         <div className={styles.headingWrap}>
           <div className="section-heading" style={{ alignItems: "center", textAlign: "center" }}>
             <span className="sub-title">Discover Afghanistan</span>
-            <h2>Afghanistan: A Land of Opportunities</h2>
-            <p style={{ margin: "0.75rem auto 0" }}>
-              Explore thriving corridors, rich culture, and pathways for travel, business,
-              and connection.
+            <h2>Industries, Economy & Culture</h2>
+            <p style={{ margin: "0.75rem auto 0", maxWidth: "38rem", color: "var(--color-gray-600)" }}>
+              Key industries, economic highlights, and culture that define Afghanistan today.
             </p>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { SmoothScrollProvider } from "@/components/SmoothScrollProvider";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { BackToTop } from "@/components/ui/BackToTop";
+import { AuthProvider } from "@/context/AuthContext";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -40,12 +41,14 @@ export default function RootLayout({
         className={`${manrope.variable} ${greatVibes.variable}`}
         suppressHydrationWarning
       >
-        <DomSafetyPatch />
-        <SmoothScrollProvider />
-        <Header />
-        <main>{children}</main>
-        <Footer />
-        <BackToTop />
+        <AuthProvider>
+          <DomSafetyPatch />
+          <SmoothScrollProvider />
+          <Header />
+          <main>{children}</main>
+          <Footer />
+          <BackToTop />
+        </AuthProvider>
       </body>
     </html>
   );

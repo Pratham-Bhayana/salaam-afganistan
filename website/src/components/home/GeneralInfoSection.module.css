@@ -1,0 +1,139 @@
+.section {
+  background: var(--color-gray-50);
+}
+
+.entryBar {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 14px;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.entryBar svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--color-black);
+}
+
+.entryBar strong {
+  display: block;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
+}
+
+.entryBar span {
+  color: var(--color-gray-600);
+  font-size: 0.95rem;
+}
+
+.grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.panel {
+  background: var(--color-white);
+  border: 1px solid var(--color-gray-200);
+  border-radius: 16px;
+  padding: 1.5rem 1.35rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.panel h3 {
+  font-size: 1.2rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-gray-100);
+}
+
+.visaList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.visaList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  font-size: 0.95rem;
+  color: var(--color-gray-700);
+}
+
+.visaList svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+  color: var(--color-black);
+}
+
+.docGroups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.docGroup h4 {
+  font-size: 0.98rem;
+  margin-bottom: 0.5rem;
+}
+
+.docGroup ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.docGroup li {
+  font-size: 0.92rem;
+  color: var(--color-gray-600);
+  line-height: 1.55;
+  padding-left: 0.85rem;
+  position: relative;
+}
+
+.docGroup li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-black);
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  justify-content: center;
+}
+
+.linkBtn {
+  border-radius: 10px;
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 0.9fr 1.1fr;
+    gap: 1.5rem;
+    align-items: start;
+  }
+}
+
+@media (max-width: 600px) {
+  .links {
+    flex-direction: column;
+  }
+
+  .linkBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}

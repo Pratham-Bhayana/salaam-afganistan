@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Facebook,
@@ -12,8 +12,10 @@ import {
   Globe,
   X,
   LogIn,
+  LogOut,
 } from "lucide-react";
 import { CONTACT, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site";
+import { useAuth } from "@/context/AuthContext";
 import styles from "./Header.module.css";
 
 function SocialIcon({ icon }: { icon: (typeof SOCIAL_LINKS)[number]["icon"] }) {
@@ -30,8 +32,23 @@ function SocialIcon({ icon }: { icon: (typeof SOCIAL_LINKS)[number]["icon"] }) {
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const userLabel = user?.displayName?.trim() || user?.email || "Account";
+
+  async function handleLogout() {
+    setLoggingOut(true);
+    try {
+      await signOut();
+      router.push("/");
+    } finally {
+      setLoggingOut(false);
+    }
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -83,10 +100,27 @@ export function Header() {
               <Globe size={14} aria-hidden />
               <span className={styles.metaText}>English</span>
             </div>
-            <Link href="/login" className={styles.loginBtn}>
-              <LogIn size={14} aria-hidden />
-              <span>Login</span>
-            </Link>
+            {!loading && user ? (
+              <div className={styles.authBlock}>
+                <span className={styles.userLabel} title={user.email ?? undefined}>
+                  {userLabel}
+                </span>
+                <button
+                  type="button"
+                  className={styles.logoutBtn}
+                  onClick={handleLogout}
+                  disabled={loggingOut}
+                >
+                  <LogOut size={14} aria-hidden />
+                  <span>{loggingOut ? "…" : "Logout"}</span>
+                </button>
+              </div>
+            ) : !loading ? (
+              <Link href="/login" className={styles.loginBtn}>
+                <LogIn size={14} aria-hidden />
+                <span>Login</span>
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
