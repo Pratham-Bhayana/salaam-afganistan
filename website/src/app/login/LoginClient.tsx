@@ -34,7 +34,7 @@ export function LoginClient() {
   const { user, loading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirect = searchParams.get("redirect") || "/apply";
+  const redirect = searchParams.get("redirect") || "/";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -45,9 +45,9 @@ export function LoginClient() {
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/");
+      router.replace(redirect);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, redirect]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();

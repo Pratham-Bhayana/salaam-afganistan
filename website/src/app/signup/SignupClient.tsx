@@ -68,7 +68,7 @@ export function SignupClient() {
 
     try {
       await signUp(email.trim(), password, fullName.trim());
-      router.push("/apply");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
@@ -82,7 +82,7 @@ export function SignupClient() {
 
     try {
       await signInWithGoogle();
-      router.push("/apply");
+      router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {

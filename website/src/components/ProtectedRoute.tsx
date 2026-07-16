@@ -20,7 +20,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      const redirect = encodeURIComponent(pathname || "/apply");
+      const redirect = encodeURIComponent(pathname || "/profile");
       router.push(`/login?redirect=${redirect}`);
     }
   }, [user, loading, router, pathname]);

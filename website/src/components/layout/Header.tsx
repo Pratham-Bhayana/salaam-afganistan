@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Facebook,
@@ -12,10 +12,12 @@ import {
   Globe,
   X,
   LogIn,
-  LogOut,
+  FileText,
+  User,
 } from "lucide-react";
 import { CONTACT, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site";
 import { useAuth } from "@/context/AuthContext";
+import { ProfileMenu } from "./ProfileMenu";
 import styles from "./Header.module.css";
 
 function SocialIcon({ icon }: { icon: (typeof SOCIAL_LINKS)[number]["icon"] }) {
@@ -32,23 +34,9 @@ function SocialIcon({ icon }: { icon: (typeof SOCIAL_LINKS)[number]["icon"] }) {
 
 export function Header() {
   const pathname = usePathname();
-  const router = useRouter();
-  const { user, loading, signOut } = useAuth();
+  const { user, loading } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [loggingOut, setLoggingOut] = useState(false);
-
-  const userLabel = user?.displayName?.trim() || user?.email || "Account";
-
-  async function handleLogout() {
-    setLoggingOut(true);
-    try {
-      await signOut();
-      router.push("/");
-    } finally {
-      setLoggingOut(false);
-    }
-  }
 
   useEffect(() => {
     setMounted(true);
@@ -102,18 +90,7 @@ export function Header() {
             </div>
             {!loading && user ? (
               <div className={styles.authBlock}>
-                <span className={styles.userLabel} title={user.email ?? undefined}>
-                  {userLabel}
-                </span>
-                <button
-                  type="button"
-                  className={styles.logoutBtn}
-                  onClick={handleLogout}
-                  disabled={loggingOut}
-                >
-                  <LogOut size={14} aria-hidden />
-                  <span>{loggingOut ? "…" : "Logout"}</span>
-                </button>
+                <ProfileMenu user={user} />
               </div>
             ) : !loading ? (
               <Link href="/login" className={styles.loginBtn}>
@@ -126,7 +103,6 @@ export function Header() {
       </div>
 
       <nav className={styles.navbar} aria-label="Primary">
-        {/* Raizing logo — left side, NO divider */}
         <Link href="/" className={styles.brandLogos} aria-label="Salaam Afghanistan home">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -153,7 +129,6 @@ export function Header() {
         </ul>
 
         <div className={styles.navRight}>
-          {/* Partner logo — right side */}
           <Link href="/" className={styles.partnerLogoLink}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -203,6 +178,22 @@ export function Header() {
                 </Link>
               </li>
             ))}
+            {!loading && user ? (
+              <>
+                <li>
+                  <Link href="/profile" className={styles.offcanvasLink}>
+                    <User size={16} aria-hidden />
+                    My Profile
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/apply" className={styles.offcanvasLink}>
+                    <FileText size={16} aria-hidden />
+                    My Application
+                  </Link>
+                </li>
+              </>
+            ) : null}
           </ul>
         </div>
       ) : null}
