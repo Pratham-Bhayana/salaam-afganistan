@@ -1,4 +1,4 @@
-export type StaffRole = 'Admin' | 'Coordinator';
+export type StaffRole = 'Admin' | 'Coordinator' | 'Finance' | 'Receptionist';
 export type StaffStatus = 'Active' | 'Inactive';
 
 export type SectionKey =
@@ -24,7 +24,7 @@ export type StaffMember = {
   fullName: string;
   email: string;
   phone: string;
-  destination: string;
+  designation: string;
   role: StaffRole;
   status: StaffStatus;
   joinedAt: string;
@@ -47,7 +47,7 @@ export const STAFF_SECTIONS: StaffSection[] = [
   { key: 'audit', label: 'Audit Logs' },
 ];
 
-export const STAFF_ROLES: StaffRole[] = ['Admin', 'Coordinator'];
+export const STAFF_ROLES: StaffRole[] = ['Admin', 'Coordinator', 'Finance', 'Receptionist'];
 
 export function emptySections(enabled = false): Record<SectionKey, boolean> {
   return STAFF_SECTIONS.reduce(
@@ -72,62 +72,6 @@ export function initials(fullName: string) {
     .join('');
 }
 
-export const mockStaff: StaffMember[] = [
-  {
-    _id: '1',
-    fullName: 'Pratham Bhayana',
-    email: 'pratham1@email.com',
-    phone: '+91 98765 43210',
-    destination: 'UAE',
-    role: 'Admin',
-    status: 'Active',
-    joinedAt: '2026-03-01',
-    lastActiveAt: '2026-07-10',
-    sections: { ...emptySections(false), dashboard: true },
-  },
-  {
-    _id: '2',
-    fullName: 'Reetu Sharma',
-    email: 'reetu@email.com',
-    phone: '+91 98111 22334',
-    destination: 'UK',
-    role: 'Coordinator',
-    status: 'Active',
-    joinedAt: '2026-04-12',
-    lastActiveAt: '2026-07-09',
-    sections: emptySections(true),
-  },
-  {
-    _id: '3',
-    fullName: 'Aisha Patel',
-    email: 'aisha@email.com',
-    phone: '+91 99000 11223',
-    destination: 'Singapore',
-    role: 'Coordinator',
-    status: 'Active',
-    joinedAt: '2026-02-18',
-    lastActiveAt: '2026-07-08',
-    sections: {
-      ...emptySections(false),
-      dashboard: true,
-      applications: true,
-      records: true,
-      finance: true,
-      embassies: true,
-      chat: true,
-      fees: true,
-    },
-  },
-  {
-    _id: '4',
-    fullName: 'Omar Hassan',
-    email: 'omar@email.com',
-    phone: '+971 50 123 4567',
-    destination: 'UAE',
-    role: 'Coordinator',
-    status: 'Active',
-    joinedAt: '2026-05-03',
-    lastActiveAt: '2026-07-07',
-    sections: emptySections(true),
-  },
-];
+export function roleCssModifier(role: StaffRole) {
+  return role.toLowerCase();
+}

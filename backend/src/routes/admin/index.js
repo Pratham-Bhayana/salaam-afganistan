@@ -77,6 +77,11 @@ router.post(
   validate,
   staffController.create
 );
+router.patch(
+  '/staff/:id/permissions',
+  requirePermission(PERMISSIONS.STAFF_MANAGE),
+  staffController.updatePermissions
+);
 router.patch('/staff/:id', requirePermission(PERMISSIONS.STAFF_MANAGE), staffController.update);
 router.delete('/staff/:id', requirePermission(PERMISSIONS.STAFF_MANAGE), staffController.remove);
 
