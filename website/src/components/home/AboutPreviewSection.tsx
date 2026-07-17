@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { OUR_STORY } from "@/data/home";
+import { OUR_STORY } from "@/data/ourStory";
 import styles from "./AboutPreviewSection.module.css";
 
 export function AboutPreviewSection() {
+  const { heading, subHeading, paragraphs } = OUR_STORY;
+
   return (
     <section className={styles.section} id="our-story">
       <div className="divider" />
@@ -33,9 +35,9 @@ export function AboutPreviewSection() {
 
           <div className={styles.contentCol}>
             <div className="section-heading">
-              <span className="sub-title">{OUR_STORY.subHeading}</span>
-              <h2>{OUR_STORY.heading}</h2>
-              {OUR_STORY.paragraphs.map((para) => (
+              <span className="sub-title">{subHeading}</span>
+              <h2>{heading}</h2>
+              {paragraphs.map((para) => (
                 <p key={para.slice(0, 48)}>{para}</p>
               ))}
             </div>

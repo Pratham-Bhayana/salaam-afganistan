@@ -1,6 +1,11 @@
+const { asyncHandler, success } = require('../../middleware/error');
+const {
+  listDecisionRecords,
+  exportDecisionRecords,
+} = require('../../services/decisionRecordsService');
+const { escapeRegex, toCsv, buildDateRangeFilter } = require('../../utils/helpers');
 const Application = require('../../models/Application');
-const { asyncHandler, success, ApiError } = require('../../middleware/error');
-const { parsePagination, escapeRegex, toCsv, buildDateRangeFilter } = require('../../utils/helpers');
+const { ApiError } = require('../../middleware/error');
 const { buildApplicationFilter } = require('./applicationController');
 
 const lookup = asyncHandler(async (req, res) => {
@@ -23,6 +28,20 @@ const lookup = asyncHandler(async (req, res) => {
   return success(res, data, { count: data.length });
 });
 
+/** Decision-only records: approved / rejected / visa_issued */
+const listDecisions = asyncHandler(async (req, res) => {
+  const { data, meta } = await listDecisionRecords(req.query, { embassyOnly: false });
+  return success(res, data, meta);
+});
+
+const exportDecisions = asyncHandler(async (req, res) => {
+  const csv = await exportDecisionRecords(req.query, { embassyOnly: false });
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="decision-records.csv"');
+  return res.status(200).send(csv);
+});
+
+/** Legacy broad export kept for backwards compatibility */
 const exportRecords = asyncHandler(async (req, res) => {
   const filter = buildApplicationFilter(req.query);
   const rows = await Application.find(filter).sort({ createdAt: -1 }).limit(5000).lean();
@@ -70,6 +89,8 @@ const recordsSummary = asyncHandler(async (req, res) => {
 
 module.exports = {
   lookup,
+  listDecisions,
+  exportDecisions,
   exportRecords,
   recordsSummary,
 };

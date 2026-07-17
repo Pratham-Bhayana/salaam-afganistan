@@ -1,26 +1,28 @@
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
 const { ApiError } = require('../middleware/error');
 
 let initialized = false;
 
 function initFirebase() {
-  if (initialized) return admin;
+  if (initialized) return true;
 
-  const mode = process.env.FIREBASE_AUTH_MODE || 'disabled';
+  const mode = (process.env.FIREBASE_AUTH_MODE || 'disabled').toLowerCase();
 
   if (mode === 'disabled') {
-    return null;
+    return false;
   }
 
   if (mode === 'dev') {
     // No real Firebase project required — used for local/API smoke tests only.
     initialized = true;
-    return admin;
+    return true;
   }
 
-  if (admin.apps.length) {
+  // mode: live | production | enabled | any other value with service-account credentials
+  if (getApps().length) {
     initialized = true;
-    return admin;
+    return true;
   }
 
   const projectId = process.env.FIREBASE_PROJECT_ID;
@@ -35,8 +37,8 @@ function initFirebase() {
 
   privateKey = privateKey.replace(/\\n/g, '\n');
 
-  admin.initializeApp({
-    credential: admin.credential.cert({
+  initializeApp({
+    credential: cert({
       projectId,
       clientEmail,
       privateKey,
@@ -44,7 +46,7 @@ function initFirebase() {
   });
 
   initialized = true;
-  return admin;
+  return true;
 }
 
 /**
@@ -59,7 +61,7 @@ async function verifyFirebaseIdToken(idToken) {
     throw new ApiError(401, 'Firebase ID token is required');
   }
 
-  const mode = process.env.FIREBASE_AUTH_MODE || 'disabled';
+  const mode = (process.env.FIREBASE_AUTH_MODE || 'disabled').toLowerCase();
 
   if (mode === 'disabled') {
     throw new ApiError(
@@ -74,7 +76,7 @@ async function verifyFirebaseIdToken(idToken) {
 
   initFirebase();
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
+    const decoded = await getAuth().verifyIdToken(idToken);
     return normalizeDecoded(decoded);
   } catch (err) {
     throw new ApiError(401, `Invalid Firebase ID token: ${err.message}`);

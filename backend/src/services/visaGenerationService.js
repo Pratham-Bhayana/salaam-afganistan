@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
+const QRCode = require('qrcode');
 const Application = require('../models/Application');
 const IssuedVisa = require('../models/IssuedVisa');
 const VisaTemplate = require('../models/VisaTemplate');
@@ -25,6 +27,109 @@ function fmtDate(value) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+function publicApiBase() {
+  const raw =
+    process.env.PUBLIC_API_URL ||
+    process.env.API_PUBLIC_URL ||
+    `http://localhost:${process.env.PORT || 5000}/api/v1`;
+  return String(raw).replace(/\/$/, '');
+}
+
+function buildVerifyUrl(token) {
+  return `${publicApiBase()}/visas/verify/${token}`;
+}
+
+function createVerificationToken() {
+  return crypto.randomBytes(24).toString('hex');
+}
+
+function parseOptionalDate(value) {
+  if (value == null || value === '') return undefined;
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d;
+}
+
+/**
+ * Merge editable visa fields into application personal/passport/travel.
+ * Mutates the mongoose doc (or plain object) in place.
+ */
+function applyVisaFieldOverrides(application, overrides = {}) {
+  if (!overrides || typeof overrides !== 'object') return application;
+
+  application.personal = application.personal || {};
+  application.passport = application.passport || {};
+  application.travel = application.travel || {};
+
+  const p = application.personal;
+  const pass = application.passport;
+  const travel = application.travel;
+
+  if (overrides.fullName != null) p.fullName = String(overrides.fullName).trim();
+  if (overrides.email != null) p.email = String(overrides.email).trim();
+  if (overrides.nationality != null) p.nationality = String(overrides.nationality).trim().toUpperCase();
+  if (overrides.sex != null) p.sex = String(overrides.sex).trim().toLowerCase();
+  if (overrides.gender != null) p.gender = String(overrides.gender).trim().toLowerCase();
+
+  const dob = parseOptionalDate(overrides.dateOfBirth);
+  if (dob) p.dateOfBirth = dob;
+
+  if (overrides.passportNumber != null) pass.passportNumber = String(overrides.passportNumber).trim();
+  if (overrides.issuingCountry != null) {
+    pass.issuingCountry = String(overrides.issuingCountry).trim().toUpperCase();
+  }
+  const issueDate = parseOptionalDate(overrides.issueDate || overrides.passportIssueDate);
+  if (issueDate) pass.issueDate = issueDate;
+  const expiryDate = parseOptionalDate(overrides.expiryDate || overrides.passportExpiryDate);
+  if (expiryDate) pass.expiryDate = expiryDate;
+
+  if (overrides.purpose != null) travel.purpose = String(overrides.purpose).trim();
+  if (overrides.addressInAfghanistan != null) {
+    travel.addressInAfghanistan = String(overrides.addressInAfghanistan).trim();
+  }
+  if (overrides.remarks != null) travel.remarks = String(overrides.remarks).trim();
+  if (overrides.placeOfIssue != null) travel.placeOfIssue = String(overrides.placeOfIssue).trim();
+
+  const entry = parseOptionalDate(overrides.intendedEntryDate || overrides.validFrom);
+  if (entry) travel.intendedEntryDate = entry;
+  const exit = parseOptionalDate(overrides.intendedExitDate || overrides.validUntil);
+  if (exit) travel.intendedExitDate = exit;
+
+  if (overrides.embassyName != null) application.embassyName = String(overrides.embassyName).trim();
+
+  return application;
+}
+
+function draftFieldsFromApplication(application) {
+  const personal = application.personal || {};
+  const passport = application.passport || {};
+  const travel = application.travel || {};
+  const toIso = (v) => {
+    if (!v) return '';
+    const d = v instanceof Date ? v : new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+
+  return {
+    fullName: personal.fullName || passport.fullName || '',
+    email: personal.email || '',
+    dateOfBirth: toIso(personal.dateOfBirth || passport.dateOfBirth),
+    sex: personal.sex || personal.gender || '',
+    nationality: personal.nationality || passport.nationality || '',
+    passportNumber: passport.passportNumber || '',
+    issuingCountry: passport.issuingCountry || '',
+    issueDate: toIso(passport.issueDate),
+    expiryDate: toIso(passport.expiryDate),
+    purpose: travel.purpose || '',
+    intendedEntryDate: toIso(travel.intendedEntryDate),
+    intendedExitDate: toIso(travel.intendedExitDate),
+    addressInAfghanistan: travel.addressInAfghanistan || '',
+    remarks: travel.remarks || application.decisionNote || '',
+    placeOfIssue: application.embassyName || travel.placeOfIssue || '',
+  };
+}
+
 function resolveFieldValue({ key, application, visaNumber, validFrom, validUntil }) {
   const personal = application.personal || {};
   const passport = application.passport || {};
@@ -46,7 +151,7 @@ function resolveFieldValue({ key, application, visaNumber, validFrom, validUntil
       payment.amount != null
         ? `${payment.currency || 'USD'} ${payment.amount}`
         : payment.feeLabel || '',
-    gender: personal.gender || passport.gender || '',
+    gender: personal.gender || personal.sex || passport.gender || '',
     applicant_name: (personal.fullName || passport.fullName || '').toUpperCase(),
     fullName: personal.fullName || passport.fullName || '',
     date_of_birth: fmtDate(personal.dateOfBirth || passport.dateOfBirth),
@@ -63,33 +168,195 @@ function resolveFieldValue({ key, application, visaNumber, validFrom, validUntil
   return map[key] != null && map[key] !== '' ? String(map[key]) : '—';
 }
 
-function tryImage(doc, urlOrPath, x, y, opts) {
-  if (!urlOrPath || String(urlOrPath).startsWith('http')) return false;
+function resolveAssetCandidates(urlOrPath) {
+  const raw = String(urlOrPath || '').trim();
+  if (!raw || raw.startsWith('http://') || raw.startsWith('https://')) return [];
+
+  const cleaned = raw.replace(/^\//, '');
   const candidates = [];
-  if (path.isAbsolute(urlOrPath)) candidates.push(urlOrPath);
-  else {
-    candidates.push(path.join(uploadRoot, urlOrPath.replace(/^\//, '')));
-    // Admin public assets when running monorepo locally
-    candidates.push(path.join(__dirname, '../../../admin-panel/public', urlOrPath.replace(/^\//, '')));
+
+  // Absolute path only if the file actually exists (avoid treating "/Logo.png" as FS root)
+  if (path.isAbsolute(raw) && fs.existsSync(raw)) {
+    candidates.push(raw);
   }
-  for (const file of candidates) {
-    try {
-      if (fs.existsSync(file)) {
-        doc.image(file, x, y, opts);
-        return true;
-      }
-    } catch {
-      /* ignore bad images */
-    }
-  }
-  return false;
+
+  candidates.push(
+    path.join(uploadRoot, cleaned),
+    path.join(uploadRoot, 'branding', cleaned),
+    path.join(__dirname, '../../../admin-panel/public', cleaned),
+    path.join(__dirname, '../../../website/public', cleaned),
+    path.join(__dirname, '../../../website', cleaned),
+    // Case variants used across panels
+    path.join(__dirname, '../../../admin-panel/public', path.basename(cleaned)),
+    path.join(__dirname, '../../../website/public', path.basename(cleaned).toLowerCase())
+  );
+
+  return [...new Set(candidates)];
 }
 
-async function generateVisaPdf({ application, template, visaNumber, outputPath, validFrom, validUntil }) {
+function resolveAssetPath(urlOrPath) {
+  for (const file of resolveAssetCandidates(urlOrPath)) {
+    if (fs.existsSync(file)) return file;
+  }
+  return null;
+}
+
+/** Read PNG/JPEG pixel size from file header (best-effort). */
+function readImageDimensions(filePath) {
+  try {
+    const buf = fs.readFileSync(filePath);
+    // PNG
+    if (buf.length >= 24 && buf[0] === 0x89 && buf[1] === 0x50) {
+      return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+    }
+    // JPEG SOF0/SOF2
+    if (buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8) {
+      let i = 2;
+      while (i < buf.length - 8) {
+        if (buf[i] !== 0xff) {
+          i += 1;
+          continue;
+        }
+        const marker = buf[i + 1];
+        if (marker === 0xc0 || marker === 0xc2) {
+          return { height: buf.readUInt16BE(i + 5), width: buf.readUInt16BE(i + 7) };
+        }
+        const len = buf.readUInt16BE(i + 2);
+        i += 2 + len;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/**
+ * Draw image inside a box without stretching. Returns used { width, height }.
+ */
+function drawFittedImage(doc, urlOrPath, boxX, boxY, maxW, maxH, opts = {}) {
+  const file = resolveAssetPath(urlOrPath);
+  if (!file) return { width: 0, height: 0, drawn: false };
+
+  const dims = readImageDimensions(file);
+  let width = maxW;
+  let height = maxH;
+  if (dims?.width && dims?.height) {
+    const scale = Math.min(maxW / dims.width, maxH / dims.height);
+    width = Math.max(1, dims.width * scale);
+    height = Math.max(1, dims.height * scale);
+  }
+
+  let x = boxX;
+  if (opts.align === 'right') x = boxX + maxW - width;
+  else if (opts.align === 'center') x = boxX + (maxW - width) / 2;
+
+  let y = boxY;
+  if (opts.valign === 'center') y = boxY + (maxH - height) / 2;
+  else if (opts.valign === 'bottom') y = boxY + maxH - height;
+
+  try {
+    if (opts.opacity != null && opts.opacity < 1) {
+      doc.save();
+      doc.opacity(opts.opacity);
+      doc.image(file, x, y, { width, height });
+      doc.restore();
+    } else {
+      doc.image(file, x, y, { width, height });
+    }
+    return { width, height, drawn: true };
+  } catch {
+    return { width: 0, height: 0, drawn: false };
+  }
+}
+
+function tryImage(doc, urlOrPath, x, y, opts = {}) {
+  if (opts.fit && Array.isArray(opts.fit)) {
+    const [maxW, maxH] = opts.fit;
+    return drawFittedImage(doc, urlOrPath, x, y, maxW, maxH, opts).drawn;
+  }
+  if (opts.width && opts.height && !opts.stretch) {
+    return drawFittedImage(doc, urlOrPath, x, y, opts.width, opts.height, opts).drawn;
+  }
+
+  const file = resolveAssetPath(urlOrPath);
+  if (!file) return false;
+  try {
+    const { opacity, ...imageOpts } = opts;
+    if (opacity != null && opacity < 1) {
+      doc.save();
+      doc.opacity(opacity);
+      doc.image(file, x, y, imageOpts);
+      doc.restore();
+    } else {
+      doc.image(file, x, y, imageOpts);
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const PHOTO_DOC_KEYS = ['photos', 'photo_45x35', 'passport_photo', 'photo'];
+
+async function resolveApplicantPhotoPath(applicationId) {
+  if (!applicationId) return null;
+  const docs = await ApplicationDocument.find({
+    application: applicationId,
+    isDeleted: false,
+    key: { $in: PHOTO_DOC_KEYS },
+    mimeType: { $regex: /^image\//i },
+  })
+    .sort({ createdAt: -1 })
+    .lean();
+
+  for (const key of PHOTO_DOC_KEYS) {
+    const match = docs.find((d) => d.key === key);
+    if (!match?.storagePath) continue;
+    const absolute = path.isAbsolute(match.storagePath)
+      ? match.storagePath
+      : path.join(uploadRoot, match.storagePath);
+    if (fs.existsSync(absolute)) return absolute;
+  }
+  return null;
+}
+
+async function generateVisaPdf({
+  application,
+  template,
+  visaNumber,
+  outputPath,
+  validFrom,
+  validUntil,
+  verifyUrl,
+  photoPath,
+}) {
   const layout = template.layout || {};
   const { fields } = fieldsForVisaType(template, application.visaTypeCode);
   const includeBarcode = template.includeBarcode !== false;
+  const includeQr = template.includeQr !== false;
   const showPhoto = layout.showPhoto !== false;
+  const accent = layout.accentColor || '#1B4D45';
+  const scanUrl = verifyUrl || `${visaNumber}|${application.referenceId || ''}`;
+
+  let resolvedPhoto = photoPath || null;
+  if (!resolvedPhoto && application?._id) {
+    resolvedPhoto = await resolveApplicantPhotoPath(application._id);
+  }
+
+  let qrBuffer = null;
+  if (includeQr || includeBarcode) {
+    try {
+      qrBuffer = await QRCode.toBuffer(scanUrl, {
+        type: 'png',
+        width: 280,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+      });
+    } catch (err) {
+      console.error('QR generation failed:', err.message);
+    }
+  }
 
   await new Promise((resolve, reject) => {
     const doc = new PDFDocument({
@@ -100,70 +367,113 @@ async function generateVisaPdf({ application, template, visaNumber, outputPath, 
     doc.pipe(stream);
 
     const pageW = template.pageWidth || 595;
-    let y = 40;
+    const pageH = template.pageHeight || 842;
+    const marginX = 44;
+    const contentW = pageW - marginX * 2;
+    let y = 24;
 
-    // Logos
-    const salaamLogo = layout.salaamLogoUrl || template.logoImageUrl;
-    const embassyLogo = layout.embassyLogoUrl || template.sealImageUrl;
-    tryImage(doc, salaamLogo, 40, y, { height: 42, width: 110 });
-    tryImage(doc, embassyLogo, pageW - 150, y, { height: 42, width: 110 });
-    y += 56;
+    doc.rect(0, 0, pageW, 6).fillColor(accent).fill();
 
-    // Authority
-    doc.fillColor('#111');
-    doc.fontSize(12).font('Helvetica-Bold')
-      .text(layout.govLine || 'ISLAMIC EMIRATE OF AFGHANISTAN', 40, y, {
-        width: pageW - 80,
+    const salaamLogo = layout.salaamLogoUrl || template.logoImageUrl || '/Logo.png';
+    const embassyLogo = layout.embassyLogoUrl || template.sealImageUrl || '/taliban-flag.png';
+    const logoMaxW = 128;
+    const logoMaxH = 52;
+    const leftLogo = drawFittedImage(doc, salaamLogo, marginX, y, logoMaxW, logoMaxH, {
+      align: 'left',
+      valign: 'center',
+    });
+    const rightLogo = drawFittedImage(
+      doc,
+      embassyLogo,
+      pageW - marginX - logoMaxW,
+      y,
+      logoMaxW,
+      logoMaxH,
+      { align: 'right', valign: 'center' }
+    );
+    y += Math.max(leftLogo.height, rightLogo.height, 40) + 14;
+
+    doc.fillColor(accent);
+    doc
+      .fontSize(12)
+      .font('Helvetica-Bold')
+      .text(layout.govLine || 'ISLAMIC EMIRATE OF AFGHANISTAN', marginX, y, {
+        width: contentW,
         align: 'center',
+        lineGap: 1,
       });
-    y = doc.y + 4;
-    doc.fontSize(10).font('Helvetica-Bold')
-      .text(layout.ministryLine || 'Ministry of Foreign Affairs', {
-        width: pageW - 80,
+    y = doc.y + 3;
+    doc
+      .fontSize(10)
+      .font('Helvetica-Bold')
+      .fillColor('#222')
+      .text(layout.ministryLine || 'Ministry of Foreign Affairs', marginX, y, {
+        width: contentW,
         align: 'center',
       });
     y = doc.y + 2;
-    doc.fontSize(9).font('Helvetica')
-      .text(layout.systemLine || 'Salaam Afghanistan — Electronic Visa System', {
-        width: pageW - 80,
+    doc
+      .fontSize(8.5)
+      .font('Helvetica')
+      .fillColor('#555')
+      .text(layout.systemLine || 'Salaam Afghanistan — Electronic Visa System', marginX, y, {
+        width: contentW,
         align: 'center',
       });
     y = doc.y + 10;
 
-    // Section title
-    doc.fontSize(11).font('Helvetica-Bold')
-      .text(layout.sectionTitle || 'eVISA Holder Information', 40, y, {
-        width: pageW - 80,
+    doc
+      .fillColor(accent)
+      .fontSize(11)
+      .font('Helvetica-Bold')
+      .text(layout.sectionTitle || 'eVISA Holder Information', marginX, y, {
+        width: contentW,
         align: 'center',
-        underline: true,
       });
-    y = doc.y + 12;
-    doc.moveTo(40, y).lineTo(pageW - 40, y).strokeColor('#222').lineWidth(1).stroke();
-    y += 14;
+    y = doc.y + 4;
+    doc
+      .moveTo(marginX + 80, y)
+      .lineTo(pageW - marginX - 80, y)
+      .strokeColor(accent)
+      .lineWidth(1.1)
+      .stroke();
+    y += 16;
 
-    // Watermark (best-effort; ignore if asset missing)
-    tryImage(doc, embassyLogo || '/taliban-flag.png', pageW / 2 - 90, y + 40, {
-      width: 180,
-      height: 180,
+    const photoW = 108;
+    const photoH = 136;
+    const gapBeforePhoto = 18;
+    const fieldsRight = showPhoto ? pageW - marginX - photoW - gapBeforePhoto : pageW - marginX;
+    const labelColW = 148;
+    const gutter = 14;
+    const valueX = marginX + labelColW + gutter;
+    const valueW = Math.max(120, fieldsRight - valueX);
+    const rightColX = pageW - marginX - photoW;
+    const fontSize = Math.min(10.5, Number(layout.fontSize) || 10);
+    const rowH = Math.max(17, fontSize + 7);
+    const fieldsTop = y;
+
+    drawFittedImage(doc, embassyLogo, pageW / 2 - 95, fieldsTop + 40, 190, 190, {
+      align: 'center',
+      valign: 'center',
+      opacity: 0.08,
     });
 
-    const labelX = 48;
-    const valueX = 210;
-    const rightColX = pageW - 40 - 110;
-    const fontSize = Number(layout.fontSize) || 10;
-
-    // Photo box
     if (showPhoto) {
-      doc.rect(rightColX, y, 110, 140).strokeColor('#333').lineWidth(1).stroke();
-      doc.fontSize(9).fillColor('#888').text('Photo', rightColX, y + 60, {
-        width: 110,
-        align: 'center',
-      });
+      doc.rect(rightColX, fieldsTop, photoW, photoH).strokeColor(accent).lineWidth(1.1).stroke();
+      if (resolvedPhoto) {
+        drawFittedImage(doc, resolvedPhoto, rightColX + 4, fieldsTop + 4, photoW - 8, photoH - 8, {
+          align: 'center',
+          valign: 'center',
+        });
+      } else {
+        doc.fontSize(9).fillColor('#888').text('Photo', rightColX, fieldsTop + photoH / 2 - 6, {
+          width: photoW,
+          align: 'center',
+        });
+      }
     }
 
-    // Fields
-    doc.fillColor('#111');
-    let rowY = y;
+    let rowY = fieldsTop;
     for (const field of fields) {
       const value = resolveFieldValue({
         key: field.key,
@@ -172,50 +482,88 @@ async function generateVisaPdf({ application, template, visaNumber, outputPath, 
         validFrom,
         validUntil,
       });
-      doc.fontSize(fontSize).font('Helvetica-Bold').text(field.label, labelX, rowY, {
-        width: valueX - labelX - 8,
-        lineBreak: false,
-      });
-      doc.font('Helvetica').text(value, valueX, rowY, {
-        width: showPhoto ? rightColX - valueX - 12 : pageW - valueX - 48,
-        lineBreak: false,
-      });
-      rowY += Math.max(16, fontSize + 6);
+      const label = String(field.label || field.key || '').replace(/:\s*$/, '');
+
+      doc
+        .fontSize(fontSize)
+        .font('Helvetica-Bold')
+        .fillColor(accent)
+        .text(`${label}:`, marginX, rowY, {
+          width: labelColW,
+          lineBreak: false,
+          ellipsis: true,
+        });
+      doc
+        .font('Helvetica')
+        .fillColor('#111')
+        .text(value, valueX, rowY, {
+          width: valueW,
+          lineBreak: false,
+          ellipsis: true,
+        });
+      rowY += rowH;
     }
 
-    // Barcode block
-    if (includeBarcode) {
-      const barY = showPhoto ? y + 150 : rowY + 8;
-      const barX = rightColX;
-      doc.rect(barX, barY, 110, 46).strokeColor('#ccc').stroke();
-      // Fake barcode bars
-      for (let i = 0; i < 28; i += 1) {
-        const bw = i % 5 === 0 ? 2.5 : i % 3 === 0 ? 1.5 : 1;
-        doc.rect(barX + 6 + i * 3.5, barY + 6, bw, 28).fillColor('#111').fill();
+    let contentBottom = rowY;
+    if (qrBuffer) {
+      const qrSize = 88;
+      const barY = showPhoto ? fieldsTop + photoH + 10 : rowY + 10;
+      const barX = showPhoto ? rightColX + (photoW - qrSize) / 2 : marginX;
+      try {
+        doc.image(qrBuffer, barX, barY, { width: qrSize, height: qrSize });
+      } catch {
+        /* keep PDF even if image fails */
       }
-      doc.fillColor('#111').fontSize(8).font('Helvetica-Bold')
-        .text(visaNumber, barX, barY + 34, { width: 110, align: 'center' });
-      rowY = Math.max(rowY, barY + 56);
+      doc
+        .fillColor('#444')
+        .fontSize(7)
+        .font('Helvetica')
+        .text('Scan to open visa', showPhoto ? rightColX : barX, barY + qrSize + 3, {
+          width: showPhoto ? photoW : qrSize + 40,
+          align: 'center',
+        });
+      doc
+        .fontSize(7.5)
+        .font('Helvetica-Bold')
+        .fillColor(accent)
+        .text(visaNumber, showPhoto ? rightColX : barX, barY + qrSize + 13, {
+          width: showPhoto ? photoW : Math.max(qrSize + 40, 140),
+          align: 'center',
+        });
+      contentBottom = Math.max(rowY, barY + qrSize + 28);
     }
 
-    // Disclaimer
-    const discY = Math.max(rowY + 20, (template.pageHeight || 842) - 120);
-    doc.rect(40, discY, pageW - 80, 70).fillColor('#ececec').fill();
-    doc.fillColor('#111').fontSize(9).font('Helvetica-Bold')
-      .text('DISCLAIMER:', 48, discY + 8, { width: pageW - 96 });
-    doc.font('Helvetica').fontSize(8)
+    const discH = 78;
+    const discY = Math.min(Math.max(contentBottom + 18, pageH - discH - 28), pageH - discH - 18);
+    doc.rect(marginX, discY, contentW, discH).fillColor('#eef6f3').fill();
+    doc.rect(marginX, discY, 4, discH).fillColor(accent).fill();
+    const discTextX = marginX + 16;
+    const discTextW = contentW - 28;
+    doc
+      .fillColor(accent)
+      .fontSize(9)
+      .font('Helvetica-Bold')
+      .text('DISCLAIMER', discTextX, discY + 10, { width: discTextW });
+    doc
+      .font('Helvetica')
+      .fontSize(7.5)
+      .fillColor('#333')
       .text(
         layout.disclaimer ||
           'This electronic visa authorizes travel to Afghanistan but does not guarantee entry.',
-        48,
-        discY + 22,
-        { width: pageW - 96, align: 'left' }
+        discTextX,
+        discY + 24,
+        { width: discTextW, align: 'left', lineGap: 1.5 }
       );
+
+    doc.rect(0, pageH - 5, pageW, 5).fillColor(accent).fill();
 
     doc.end();
     stream.on('finish', resolve);
     stream.on('error', reject);
   });
+
+  return { verifyUrl: scanUrl };
 }
 
 async function resolveTemplate() {
@@ -232,33 +580,44 @@ async function resolveTemplate() {
 
 function validityWindow(application) {
   const validFrom = application.travel?.intendedEntryDate || new Date();
-  const stay = application.travel?.stayDurationDays || 30;
-  const validUntil = new Date(validFrom);
-  validUntil.setDate(validUntil.getDate() + stay);
+  let validUntil;
+  if (application.travel?.intendedExitDate) {
+    validUntil = new Date(application.travel.intendedExitDate);
+  } else {
+    const stay = application.travel?.stayDurationDays || 30;
+    validUntil = new Date(validFrom);
+    validUntil.setDate(validUntil.getDate() + stay);
+  }
   return { validFrom, validUntil };
 }
+
+const PREVIEWABLE_STATUSES = [
+  APPLICATION_STATUSES.UNDER_EMBASSY_REVIEW,
+  APPLICATION_STATUSES.APPROVED,
+  APPLICATION_STATUSES.VISA_ISSUED,
+  APPLICATION_STATUSES.SENT_TO_EMBASSY,
+  APPLICATION_STATUSES.DOCUMENTS_REQUIRED,
+];
 
 /**
  * Build a PDF preview without saving IssuedVisa / documents / email / status.
  * Works for applications in review or already approved.
  */
-async function previewVisaForApplication({ applicationId }) {
+async function previewVisaForApplication({ applicationId, fieldOverrides }) {
   const application = await Application.findById(applicationId);
   if (!application) throw new ApiError(404, 'Application not found');
 
-  const previewable = [
-    APPLICATION_STATUSES.UNDER_EMBASSY_REVIEW,
-    APPLICATION_STATUSES.APPROVED,
-    APPLICATION_STATUSES.VISA_ISSUED,
-    APPLICATION_STATUSES.SENT_TO_EMBASSY,
-  ];
-  if (!previewable.includes(application.status)) {
+  if (!PREVIEWABLE_STATUSES.includes(application.status)) {
     throw new ApiError(400, 'Visa preview is not available for this application status');
   }
+
+  applyVisaFieldOverrides(application, fieldOverrides);
 
   const template = await resolveTemplate();
   const { validFrom, validUntil } = validityWindow(application);
   const visaNumber = `PREVIEW-${application.referenceId || application._id}`;
+  const previewToken = `preview-${application._id}-${Date.now()}`;
+  const verifyUrl = buildVerifyUrl(previewToken);
 
   const tmpDir = path.join(uploadRoot, 'tmp');
   fs.mkdirSync(tmpDir, { recursive: true });
@@ -272,6 +631,7 @@ async function previewVisaForApplication({ applicationId }) {
       outputPath,
       validFrom,
       validUntil,
+      verifyUrl,
     });
     const buffer = fs.readFileSync(outputPath);
     return {
@@ -281,6 +641,8 @@ async function previewVisaForApplication({ applicationId }) {
       referenceId: application.referenceId,
       applicantName: application.personal?.fullName || application.passport?.fullName || '',
       applicantEmail: application.personal?.email || '',
+      draftFields: draftFieldsFromApplication(application),
+      verifyUrl,
     };
   } finally {
     try {
@@ -297,6 +659,7 @@ async function issueVisaForApplication({
   embassyStaff,
   force = false,
   sendEmail = true,
+  fieldOverrides,
 }) {
   if (!staff && !embassyStaff) {
     throw new ApiError(500, 'Visa issuance requires an actor');
@@ -317,6 +680,14 @@ async function issueVisaForApplication({
     throw new ApiError(400, 'Visa can only be issued for approved applications');
   }
 
+  if (fieldOverrides && typeof fieldOverrides === 'object') {
+    applyVisaFieldOverrides(application, fieldOverrides);
+    application.markModified('personal');
+    application.markModified('passport');
+    application.markModified('travel');
+    await application.save();
+  }
+
   const template = await resolveTemplate();
   const actorId = (staff || embassyStaff)._id;
   const visaNumber = generateVisaNumber();
@@ -326,6 +697,8 @@ async function issueVisaForApplication({
   fs.mkdirSync(path.dirname(absolute), { recursive: true });
 
   const { validFrom, validUntil } = validityWindow(application);
+  const verificationToken = createVerificationToken();
+  const verifyUrl = buildVerifyUrl(verificationToken);
 
   await generateVisaPdf({
     application,
@@ -334,6 +707,7 @@ async function issueVisaForApplication({
     outputPath: absolute,
     validFrom,
     validUntil,
+    verifyUrl,
   });
 
   // Soft-delete prior issued_visa docs so the document panel shows the latest
@@ -375,7 +749,8 @@ async function issueVisaForApplication({
         entries: 'single',
         document: docRecord._id,
         storagePath,
-        qrPayload: `${visaNumber}|${application.referenceId}`,
+        qrPayload: verifyUrl,
+        verificationToken,
         issuedBy: staff ? staff._id : undefined,
         issuedByEmbassyStaff: embassyStaff ? embassyStaff._id : undefined,
         issuedAt: new Date(),
@@ -413,6 +788,7 @@ async function issueVisaForApplication({
         referenceId: application.referenceId,
         visaNumber,
         fullName: application.personal.fullName || '',
+        verifyUrl,
       },
     });
     docRecord.emailNotifiedAt = new Date();
@@ -426,4 +802,9 @@ module.exports = {
   issueVisaForApplication,
   previewVisaForApplication,
   generateVisaPdf,
+  applyVisaFieldOverrides,
+  draftFieldsFromApplication,
+  buildVerifyUrl,
+  createVerificationToken,
+  publicApiBase,
 };

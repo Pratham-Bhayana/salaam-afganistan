@@ -144,6 +144,7 @@ const previewVisa = asyncHandler(async (req, res) => {
 
   const preview = await previewVisaForApplication({
     applicationId: req.body.applicationId,
+    fieldOverrides: req.body.fieldOverrides || req.body.overrides || undefined,
   });
 
   res.setHeader('Content-Type', 'application/pdf');
@@ -164,6 +165,7 @@ const issueNow = asyncHandler(async (req, res) => {
     staff: req.staff,
     force: !!req.body.force,
     sendEmail,
+    fieldOverrides: req.body.fieldOverrides || req.body.overrides || undefined,
   });
   await auditFromReq(req, {
     action: 'visa.issue',

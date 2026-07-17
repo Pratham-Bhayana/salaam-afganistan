@@ -1,4 +1,4 @@
-import { apiFetch, getAccessToken, EMBASSY_PREFIX } from './client';
+import { apiFetch, getAccessToken, EMBASSY_PREFIX, ApiError } from './client';
 
 export type ApplicationStatus =
   | 'draft'
@@ -171,6 +171,87 @@ export async function openApplicationDocument(applicationId: string, documentId:
   const url = URL.createObjectURL(blob);
   window.open(url, '_blank', 'noopener,noreferrer');
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+export type VisaDraftFields = {
+  fullName?: string;
+  email?: string;
+  dateOfBirth?: string;
+  sex?: string;
+  nationality?: string;
+  passportNumber?: string;
+  issuingCountry?: string;
+  issueDate?: string;
+  expiryDate?: string;
+  purpose?: string;
+  intendedEntryDate?: string;
+  intendedExitDate?: string;
+  addressInAfghanistan?: string;
+  remarks?: string;
+  placeOfIssue?: string;
+};
+
+export async function getVisaDraft(applicationId: string) {
+  return apiFetch<{
+    applicationId: string;
+    referenceId: string;
+    status: ApplicationStatus;
+    visaTypeCode: string;
+    draftFields: VisaDraftFields;
+    applicantEmail?: string;
+    applicantName?: string;
+  }>(`/applications/${applicationId}/visa-draft`);
+}
+
+export async function previewVisaPdf(
+  applicationId: string,
+  fieldOverrides?: VisaDraftFields
+) {
+  const token = getAccessToken();
+  const res = await fetch(`${EMBASSY_PREFIX}/applications/${applicationId}/visa-preview`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ fieldOverrides: fieldOverrides || undefined }),
+  });
+
+  if (!res.ok) {
+    let message = 'Failed to generate visa preview';
+    try {
+      const json = (await res.json()) as { message?: string };
+      if (json.message) message = json.message;
+    } catch {
+      /* ignore */
+    }
+    throw new ApiError(res.status, message);
+  }
+
+  const blob = await res.blob();
+  return {
+    blob,
+    visaNumber: res.headers.get('X-Visa-Preview-Number') || '',
+    referenceId: res.headers.get('X-Visa-Reference-Id') || '',
+    applicantEmail: res.headers.get('X-Applicant-Email') || '',
+    applicantName: decodeURIComponent(res.headers.get('X-Applicant-Name') || ''),
+  };
+}
+
+export async function issueVisa(
+  applicationId: string,
+  body: { sendEmail?: boolean; force?: boolean; fieldOverrides?: VisaDraftFields } = {}
+) {
+  return apiFetch<{
+    _id: string;
+    visaNumber: string;
+    referenceId: string;
+    verificationToken?: string;
+    qrPayload?: string;
+  }>(`/applications/${applicationId}/visa-issue`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export function formatDate(value?: string | Date | null) {

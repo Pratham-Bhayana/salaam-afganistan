@@ -4,17 +4,34 @@ import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { APPLYING_FROM_OPTIONS, HERO_SLIDES } from "@/data/home";
+import { detectApplyingFromCountry } from "@/lib/detectCountry";
 import styles from "./HeroSection.module.css";
 
 export function HeroSection() {
   const [slideIndex, setSlideIndex] = useState(0);
-  const [applyingFrom, setApplyingFrom] = useState(APPLYING_FROM_OPTIONS[0]?.value ?? "");
+  const [applyingFrom, setApplyingFrom] = useState("");
+  const [locationDetected, setLocationDetected] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
       setSlideIndex((prev) => (prev + 1) % HERO_SLIDES.length);
     }, 7000);
     return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void (async () => {
+      const detected = await detectApplyingFromCountry();
+      if (cancelled || !detected) return;
+      setApplyingFrom(detected);
+      setLocationDetected(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   function goPrev() {
@@ -27,6 +44,7 @@ export function HeroSection() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!applyingFrom) return;
     window.location.href = `/apply?from=${encodeURIComponent(applyingFrom)}`;
   }
 
@@ -41,13 +59,23 @@ export function HeroSection() {
             <form className={styles.form} onSubmit={handleSubmit}>
               <label className={styles.label} htmlFor="applying-from">
                 Applying From
+                {locationDetected ? (
+                  <span className={styles.detectedHint}> · based on your location</span>
+                ) : null}
               </label>
               <select
                 id="applying-from"
                 className={styles.select}
                 value={applyingFrom}
-                onChange={(e) => setApplyingFrom(e.target.value)}
+                required
+                onChange={(e) => {
+                  setApplyingFrom(e.target.value);
+                  setLocationDetected(false);
+                }}
               >
+                <option value="" disabled>
+                  Select country
+                </option>
                 {APPLYING_FROM_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
@@ -66,7 +94,11 @@ export function HeroSection() {
                 readOnly
               />
 
-              <button type="submit" className={`btn btn-primary btn-full ${styles.applyBtn}`}>
+              <button
+                type="submit"
+                className={`btn btn-primary btn-full ${styles.applyBtn}`}
+                disabled={!applyingFrom}
+              >
                 Apply Now
               </button>
             </form>

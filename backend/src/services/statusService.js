@@ -98,12 +98,21 @@ async function changeApplicationStatus({
         settings?.notifications?.visaIssuedEmails !== false);
 
     if (shouldEmail) {
+      const isApproved = toStatus === APPLICATION_STATUSES.APPROVED;
+      const isIssued = toStatus === APPLICATION_STATUSES.VISA_ISSUED;
       await notifyApplicant({
         applicantId: application.applicant,
         email: application.personal.email,
-        type: 'status_change',
-        title: `Application ${application.referenceId} is now ${toStatus}`,
-        body: note || `Your application status changed to ${toStatus}.`,
+        type: isIssued ? 'visa_issued' : isApproved ? 'approved' : 'status_change',
+        title: isApproved
+          ? `🎉 Visa approved — ${application.referenceId}`
+          : isIssued
+            ? `🎉 Visa issued — ${application.referenceId}`
+            : `Application ${application.referenceId} is now ${toStatus}`,
+        body: isApproved
+          ? note ||
+            `Congratulations! Your application ${application.referenceId} has been approved.`
+          : note || `Your application status changed to ${toStatus}.`,
         applicationId: application._id,
         templateCode: 'application_status_change',
         vars: {

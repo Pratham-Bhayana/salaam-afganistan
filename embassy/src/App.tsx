@@ -6,6 +6,7 @@ import { Dashboard } from './pages/Dashboard';
 import { Applications } from './pages/Applications';
 import { ApplicationDetail } from './pages/ApplicationDetail';
 import { Chat } from './pages/Chat';
+import { Records } from './pages/Records';
 import { Login } from './pages/Login';
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="applications" element={<Applications />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
+            <Route path="records" element={<Records />} />
             <Route path="chat" element={<Chat />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

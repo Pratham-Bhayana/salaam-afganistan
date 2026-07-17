@@ -31,7 +31,7 @@ function GoogleIcon() {
 }
 
 export function SignupClient() {
-  const { user, loading, signUp, signInWithGoogle } = useAuth();
+  const { user, loading, firebaseReady, signUp, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   const [fullName, setFullName] = useState("");
@@ -106,8 +106,12 @@ export function SignupClient() {
 
         <h1 className={styles.heading}>Create Account</h1>
         <p className={styles.subtitle}>Sign up to start your visa application</p>
-        <p className={styles.forgotText}>Demo password / OTP: 123456</p>
 
+        {!firebaseReady ? (
+          <p className={styles.formError}>
+            Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys to website/.env
+          </p>
+        ) : null}
         {error ? <p className={styles.formError}>{error}</p> : null}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -157,7 +161,7 @@ export function SignupClient() {
                 required
                 minLength={6}
                 autoComplete="new-password"
-                placeholder="123456"
+                placeholder="At least 6 characters"
               />
               <button
                 type="button"
@@ -184,7 +188,7 @@ export function SignupClient() {
                 required
                 minLength={6}
                 autoComplete="new-password"
-                placeholder="123456"
+                placeholder="At least 6 characters"
               />
               <button
                 type="button"
@@ -200,7 +204,7 @@ export function SignupClient() {
           <button
             type="submit"
             className={`btn btn-primary btn-full ${styles.submitBtn}`}
-            disabled={submitting || googleSubmitting}
+            disabled={submitting || googleSubmitting || !firebaseReady}
           >
             {submitting ? "Creating account…" : "Create Account"}
           </button>
@@ -212,7 +216,7 @@ export function SignupClient() {
           type="button"
           className={`btn btn-outline btn-full ${styles.googleBtn}`}
           onClick={handleGoogleSignUp}
-          disabled={submitting || googleSubmitting}
+          disabled={submitting || googleSubmitting || !firebaseReady}
         >
           <GoogleIcon />
           {googleSubmitting ? "Signing up…" : "Sign up with Google"}

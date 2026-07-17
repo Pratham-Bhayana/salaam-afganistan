@@ -92,6 +92,7 @@ export type ApplicationDetail = ApplicationListItem & {
     toStatus?: string;
     at?: string;
     actorName?: string;
+    actorType?: string;
   }>;
   payments?: Array<{ _id: string; amount?: number; currency?: string; status?: string }>;
 };
@@ -149,6 +150,13 @@ export async function requestDocuments(
   return apiFetch<ApplicationDetail>(`/applications/${id}/documents/request`, {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+}
+
+export async function addApplicationNote(id: string, note: string) {
+  return apiFetch<ApplicationDetail>(`/applications/${id}/notes`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
   });
 }
 

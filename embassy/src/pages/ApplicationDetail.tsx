@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import {
   Building2,
@@ -9,6 +9,7 @@ import {
   Plane,
   Send,
   Shield,
+  Stamp,
   UserRound,
 } from 'lucide-react';
 import {
@@ -16,11 +17,15 @@ import {
   decideApplication,
   formatDate,
   getApplication,
+  getVisaDraft,
+  issueVisa,
   openApplicationDocument,
+  previewVisaPdf,
   staffLabel,
   statusLabel,
   type ApplicationDetail as ApplicationDetailType,
   type DecideStatus,
+  type VisaDraftFields,
 } from '../api/applications';
 import { ApiError } from '../api/client';
 import { useAuth } from '../api/AuthContext';
@@ -35,6 +40,50 @@ const DECIDE_STATUSES: DecideStatus[] = [
   'rejected',
   'documents_required',
 ];
+
+const EMPTY_DRAFT: VisaDraftFields = {
+  fullName: '',
+  email: '',
+  dateOfBirth: '',
+  sex: '',
+  nationality: '',
+  passportNumber: '',
+  issuingCountry: '',
+  issueDate: '',
+  expiryDate: '',
+  purpose: '',
+  intendedEntryDate: '',
+  intendedExitDate: '',
+  addressInAfghanistan: '',
+  remarks: '',
+  placeOfIssue: '',
+};
+
+function draftFromApp(app: ApplicationDetailType): VisaDraftFields {
+  const toIso = (v?: string) => {
+    if (!v) return '';
+    const d = new Date(v);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toISOString().slice(0, 10);
+  };
+  return {
+    fullName: app.personal?.fullName || '',
+    email: app.personal?.email || '',
+    dateOfBirth: toIso(app.personal?.dateOfBirth),
+    sex: app.personal?.sex || '',
+    nationality: app.personal?.nationality || '',
+    passportNumber: app.passport?.passportNumber || '',
+    issuingCountry: app.passport?.issuingCountry || '',
+    issueDate: toIso(app.passport?.issueDate),
+    expiryDate: toIso(app.passport?.expiryDate),
+    purpose: app.travel?.purpose || '',
+    intendedEntryDate: toIso(app.travel?.intendedEntryDate),
+    intendedExitDate: toIso(app.travel?.intendedExitDate),
+    addressInAfghanistan: app.travel?.addressInAfghanistan || '',
+    remarks: '',
+    placeOfIssue: '',
+  };
+}
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -53,8 +102,20 @@ export function ApplicationDetail() {
 
   const [docsOpen, setDocsOpen] = useState(false);
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [issueOpen, setIssueOpen] = useState(false);
   const [docNote, setDocNote] = useState('');
   const [rejectReason, setRejectReason] = useState('');
+  const [draftFields, setDraftFields] = useState<VisaDraftFields>(EMPTY_DRAFT);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
+  const [previewMeta, setPreviewMeta] = useState<{
+    visaNumber?: string;
+    applicantEmail?: string;
+    applicantName?: string;
+  } | null>(null);
+  const [sendEmailOnIssue, setSendEmailOnIssue] = useState(true);
+  const previewUrlRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -83,6 +144,12 @@ export function ApplicationDetail() {
     return () => window.clearInterval(timer);
   }, [id, load]);
 
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    };
+  }, []);
+
   if (!id) return <Navigate to="/applications" replace />;
   if (!loading && !app && error) {
     return (
@@ -107,10 +174,26 @@ export function ApplicationDetail() {
     )
   );
 
-  const canStartReview = allowed.has('under_embassy_review');
-  const canApprove = allowed.has('approved');
-  const canReject = allowed.has('rejected');
-  const canRequestDocs = allowed.has('documents_required');
+  // Fallback: after request-docs the UI still needs approve/reject even if API lags
+  const canStartReview =
+    allowed.has('under_embassy_review') || current.status === 'documents_required';
+  const canApprove =
+    allowed.has('approved') ||
+    current.status === 'sent_to_embassy' ||
+    current.status === 'under_embassy_review' ||
+    current.status === 'documents_required';
+  const canReject =
+    allowed.has('rejected') ||
+    current.status === 'sent_to_embassy' ||
+    current.status === 'under_embassy_review' ||
+    current.status === 'documents_required';
+  const canRequestDocs =
+    allowed.has('documents_required') ||
+    current.status === 'sent_to_embassy' ||
+    current.status === 'under_embassy_review' ||
+    current.status === 'documents_required';
+  const canGenerateVisa =
+    current.status === 'approved' || current.status === 'visa_issued';
 
   const age = current.personal?.dateOfBirth
     ? Math.floor(
@@ -183,6 +266,95 @@ export function ApplicationDetail() {
     } catch {
       /* error shown */
     }
+  }
+
+  function revokePreviewUrl() {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+    setPreviewUrl(null);
+  }
+
+  function closeIssueModal() {
+    setIssueOpen(false);
+    setPreviewError('');
+    setPreviewMeta(null);
+    setPreviewLoading(false);
+    revokePreviewUrl();
+  }
+
+  async function refreshPreview(overrides: VisaDraftFields) {
+    if (!id) return;
+    setPreviewLoading(true);
+    setPreviewError('');
+    revokePreviewUrl();
+    try {
+      const preview = await previewVisaPdf(id, overrides);
+      const url = URL.createObjectURL(preview.blob);
+      previewUrlRef.current = url;
+      setPreviewUrl(url);
+      setPreviewMeta({
+        visaNumber: preview.visaNumber,
+        applicantEmail: preview.applicantEmail,
+        applicantName: preview.applicantName,
+      });
+    } catch (err) {
+      setPreviewError(err instanceof ApiError ? err.message : 'Failed to generate visa preview');
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  async function openIssueModal() {
+    if (!id) return;
+    setActionError('');
+    setPreviewError('');
+    setSendEmailOnIssue(true);
+    setIssueOpen(true);
+    setDraftFields(draftFromApp(current));
+    setPreviewLoading(true);
+    revokePreviewUrl();
+    try {
+      const draft = await getVisaDraft(id);
+      const fields = { ...EMPTY_DRAFT, ...draft.data.draftFields };
+      setDraftFields(fields);
+      await refreshPreview(fields);
+    } catch (err) {
+      setPreviewError(err instanceof ApiError ? err.message : 'Failed to load visa draft');
+      setPreviewLoading(false);
+    }
+  }
+
+  async function onSaveAndSendVisa(e: FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+    setActionLoading(true);
+    setActionError('');
+    try {
+      await issueVisa(id, {
+        sendEmail: sendEmailOnIssue,
+        force: current.status === 'visa_issued',
+        fieldOverrides: draftFields,
+      });
+      const fresh = await getApplication(id);
+      setApp(fresh.data);
+      closeIssueModal();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Failed to save and send visa');
+      try {
+        const fresh = await getApplication(id);
+        setApp(fresh.data);
+      } catch {
+        /* keep current */
+      }
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
+  function updateDraftField<K extends keyof VisaDraftFields>(key: K, value: VisaDraftFields[K]) {
+    setDraftFields((prev) => ({ ...prev, [key]: value }));
   }
 
   async function onSendNote(e: FormEvent) {
@@ -272,6 +444,18 @@ export function ApplicationDetail() {
               disabled={actionLoading}
             >
               Reject visa
+            </button>
+          ) : null}
+
+          {canGenerateVisa ? (
+            <button
+              type="button"
+              className="app-detail__btn app-detail__btn--green"
+              onClick={() => void openIssueModal()}
+              disabled={actionLoading}
+            >
+              <Stamp size={16} />
+              {current.status === 'visa_issued' ? 'Re-issue visa' : 'Generate visa'}
             </button>
           ) : null}
 
@@ -580,6 +764,206 @@ export function ApplicationDetail() {
               disabled={actionLoading || !rejectReason.trim()}
             >
               {actionLoading ? 'Rejecting…' : 'Reject visa'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={issueOpen}
+        title={current.status === 'visa_issued' ? 'Re-issue visa' : 'Generate visa'}
+        onClose={closeIssueModal}
+        className="modal--visa-preview"
+      >
+        <form className="modal-form visa-issue-preview" onSubmit={(e) => void onSaveAndSendVisa(e)}>
+          {actionError ? <div className="modal-form__error">{actionError}</div> : null}
+
+          <p className="visa-issue-preview__meta">
+            Autofilled from the application. Check or edit details, refresh the PDF preview, then
+            save &amp; send. A scannable QR code on the PDF opens the visa for download/view and
+            appears automatically in the admin panel and applicant profile.
+          </p>
+
+          <div className="visa-issue-preview__layout">
+            <div>
+              <div className="visa-issue-preview__fields">
+                <label>
+                  Full name
+                  <input
+                    value={draftFields.fullName || ''}
+                    onChange={(e) => updateDraftField('fullName', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Email
+                  <input
+                    type="email"
+                    value={draftFields.email || ''}
+                    onChange={(e) => updateDraftField('email', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Date of birth
+                  <input
+                    type="date"
+                    value={draftFields.dateOfBirth || ''}
+                    onChange={(e) => updateDraftField('dateOfBirth', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Sex
+                  <input
+                    value={draftFields.sex || ''}
+                    onChange={(e) => updateDraftField('sex', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Nationality
+                  <input
+                    value={draftFields.nationality || ''}
+                    onChange={(e) => updateDraftField('nationality', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Passport number
+                  <input
+                    value={draftFields.passportNumber || ''}
+                    onChange={(e) => updateDraftField('passportNumber', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Issuing country
+                  <input
+                    value={draftFields.issuingCountry || ''}
+                    onChange={(e) => updateDraftField('issuingCountry', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Passport issue
+                  <input
+                    type="date"
+                    value={draftFields.issueDate || ''}
+                    onChange={(e) => updateDraftField('issueDate', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Passport expiry
+                  <input
+                    type="date"
+                    value={draftFields.expiryDate || ''}
+                    onChange={(e) => updateDraftField('expiryDate', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Entry date
+                  <input
+                    type="date"
+                    value={draftFields.intendedEntryDate || ''}
+                    onChange={(e) => updateDraftField('intendedEntryDate', e.target.value)}
+                  />
+                </label>
+                <label>
+                  Exit date
+                  <input
+                    type="date"
+                    value={draftFields.intendedExitDate || ''}
+                    onChange={(e) => updateDraftField('intendedExitDate', e.target.value)}
+                  />
+                </label>
+                <label className="is-span">
+                  Purpose
+                  <input
+                    value={draftFields.purpose || ''}
+                    onChange={(e) => updateDraftField('purpose', e.target.value)}
+                  />
+                </label>
+                <label className="is-span">
+                  Address in Afghanistan
+                  <input
+                    value={draftFields.addressInAfghanistan || ''}
+                    onChange={(e) => updateDraftField('addressInAfghanistan', e.target.value)}
+                  />
+                </label>
+                <label className="is-span">
+                  Remarks
+                  <textarea
+                    value={draftFields.remarks || ''}
+                    onChange={(e) => updateDraftField('remarks', e.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="visa-issue-preview__toolbar">
+                <button
+                  type="button"
+                  disabled={previewLoading || actionLoading}
+                  onClick={() => void refreshPreview(draftFields)}
+                >
+                  {previewLoading ? 'Refreshing…' : 'Refresh preview'}
+                </button>
+              </div>
+            </div>
+
+            <div className="visa-issue-preview__frame-wrap">
+              {previewLoading ? (
+                <div className="visa-issue-preview__loading">Generating visa PDF preview…</div>
+              ) : null}
+              {previewError ? <div className="visa-issue-preview__error">{previewError}</div> : null}
+              {!previewLoading && previewUrl ? (
+                <iframe
+                  className="visa-issue-preview__frame"
+                  title="Visa PDF preview"
+                  src={previewUrl}
+                />
+              ) : null}
+            </div>
+          </div>
+
+          {previewMeta ? (
+            <p className="visa-issue-preview__meta">
+              Preview for <strong>{previewMeta.applicantName || 'applicant'}</strong>
+              {previewMeta.applicantEmail ? (
+                <>
+                  {' '}
+                  · <strong>{previewMeta.applicantEmail}</strong>
+                </>
+              ) : null}
+              {previewMeta.visaNumber ? (
+                <>
+                  {' '}
+                  · draft no. <strong>{previewMeta.visaNumber}</strong>
+                </>
+              ) : null}
+            </p>
+          ) : null}
+
+          <label className="visa-issue-preview__check">
+            <input
+              type="checkbox"
+              checked={sendEmailOnIssue}
+              onChange={(e) => setSendEmailOnIssue(e.target.checked)}
+            />
+            <span>
+              Notify applicant that the visa is ready to view/download
+              {previewMeta?.applicantEmail || draftFields.email
+                ? ` (${previewMeta?.applicantEmail || draftFields.email})`
+                : ''}
+            </span>
+          </label>
+
+          <div className="modal-form__actions">
+            <button type="button" className="is-ghost" onClick={closeIssueModal} disabled={actionLoading}>
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="is-primary"
+              disabled={actionLoading || previewLoading || !previewUrl || Boolean(previewError)}
+            >
+              {actionLoading
+                ? 'Saving…'
+                : sendEmailOnIssue
+                  ? 'Save & send to applicant'
+                  : 'Save to documents'}
             </button>
           </div>
         </form>

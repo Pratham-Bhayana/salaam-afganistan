@@ -1,0 +1,330 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.cardWrap {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: cardIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes cardIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  height: 100%;
+  padding: 1.1rem 1.15rem 1.15rem;
+  border: 1.5px solid var(--color-gray-200);
+  border-radius: 16px;
+  background:
+    linear-gradient(165deg, #ffffff 0%, #fafafa 55%, #f4f4f5 100%);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.03);
+  transition:
+    border-color 0.25s ease,
+    box-shadow 0.25s ease,
+    transform 0.25s ease;
+}
+
+.card:hover {
+  border-color: var(--color-gray-400);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.cardFilled {
+  border-color: var(--color-gray-300);
+  background: var(--color-white);
+}
+
+.cardDone {
+  border-color: var(--color-gray-800);
+  box-shadow: 0 0 0 1px var(--color-gray-800);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.cardIcon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--color-gray-100);
+  color: var(--color-gray-800);
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+.cardDone .cardIcon {
+  background: var(--color-black);
+  color: var(--color-white);
+}
+
+.cardTitles {
+  min-width: 0;
+  flex: 1;
+}
+
+.cardTitles h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--color-gray-900);
+  letter-spacing: -0.01em;
+}
+
+.cardTitles p {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin: 0.35rem 0 0;
+}
+
+.req {
+  color: var(--color-gray-800);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  background: var(--color-gray-100);
+  color: var(--color-gray-600);
+}
+
+.badge_required {
+  background: var(--color-gray-900);
+  color: var(--color-white);
+}
+
+.badge_recommended {
+  background: var(--color-gray-200);
+  color: var(--color-gray-800);
+}
+
+.badge_optional,
+.badge_conditional {
+  background: transparent;
+  border: 1px solid var(--color-gray-300);
+  color: var(--color-gray-500);
+}
+
+.count {
+  font-size: 0.75rem;
+  font-weight: 550;
+  color: var(--color-gray-500);
+}
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  min-height: 96px;
+  padding: 1rem 0.75rem;
+  border: 1.5px dashed var(--color-gray-300);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  text-align: center;
+  color: var(--color-gray-500);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.dropzone:hover,
+.dropzone:focus-within {
+  border-color: var(--color-black);
+  background: var(--color-gray-50);
+  color: var(--color-gray-800);
+}
+
+.dropzone svg {
+  color: var(--color-gray-800);
+  margin-bottom: 0.15rem;
+}
+
+.dropTitle {
+  font-size: 0.84rem;
+  font-weight: 650;
+  color: var(--color-gray-900);
+}
+
+.dropHint {
+  font-size: 0.72rem;
+  color: var(--color-gray-500);
+}
+
+.hiddenInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.fileList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.fileItem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 0.35rem 0.5rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--color-gray-200);
+  background: var(--color-white);
+  animation: fileIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fileIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.fileMeta {
+  grid-column: 1;
+  grid-row: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.fileName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-gray-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fileSize {
+  font-size: 0.7rem;
+  color: var(--color-gray-500);
+}
+
+.progressTrack {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--color-gray-100);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #27272a 0%, #000 55%, #52525b 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.1s linear infinite;
+  transition: width 0.18s ease-out;
+}
+
+.progressDone {
+  background: var(--color-black);
+  animation: none;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.fileActions {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.fileStatus {
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--color-gray-500);
+  min-width: 2.6rem;
+  text-align: right;
+}
+
+.cardDone .fileStatus {
+  color: var(--color-gray-800);
+}
+
+.removeBtn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--color-gray-200);
+  border-radius: 8px;
+  background: var(--color-white);
+  color: var(--color-gray-600);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.removeBtn:hover {
+  background: var(--color-gray-900);
+  border-color: var(--color-gray-900);
+  color: var(--color-white);
+}
+
+@media (max-width: 720px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

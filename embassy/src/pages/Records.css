@@ -1,0 +1,137 @@
+@import './Applications.css';
+
+.records-page {
+  gap: 0;
+}
+
+.records-note {
+  margin: -8px 0 12px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+
+.records-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.records-header__titles h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.records-header__titles p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.records-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.records-header__controls select,
+.records-header__controls input[type='date'] {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(22, 22, 31, 0.1);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.records-header__search {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid rgba(22, 22, 31, 0.1);
+  border-radius: 10px;
+  background: var(--surface);
+  min-width: 220px;
+}
+
+.records-header__search input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  width: 100%;
+}
+
+.records-header__export {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 10px;
+  background: var(--purple);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.records-header__export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.records-table__actions-col {
+  width: 72px;
+}
+
+.records-table__actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.records-pill {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.records-pill--approved {
+  background: rgba(47, 158, 107, 0.16);
+  color: #1a6b45;
+}
+
+.records-pill--rejected {
+  background: rgba(214, 69, 69, 0.14);
+  color: #9a2b2b;
+}
+
+.records-decider {
+  max-width: 200px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.records-empty {
+  text-align: center;
+  padding: 28px 16px !important;
+  color: var(--ink-muted);
+  font-size: 13px;
+}

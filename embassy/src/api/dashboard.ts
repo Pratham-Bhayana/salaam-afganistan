@@ -100,7 +100,7 @@ export function buildOverviewStats(data: DashboardData): OverviewStat[] {
   return [
     {
       id: 'inbox',
-      label: 'Active inbox',
+      label: 'Active application',
       value: String(kpis.activeInbox),
       delta: kpis.activeInboxDelta.delta,
       trend: kpis.activeInboxDelta.trend,

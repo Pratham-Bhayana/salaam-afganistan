@@ -6,6 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { BackToTop } from "@/components/ui/BackToTop";
 import { AuthProvider } from "@/context/AuthContext";
+import { NotificationProvider } from "@/context/NotificationContext";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -42,12 +43,14 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
-          <DomSafetyPatch />
-          <SmoothScrollProvider />
-          <Header />
-          <main>{children}</main>
-          <Footer />
-          <BackToTop />
+          <NotificationProvider>
+            <DomSafetyPatch />
+            <SmoothScrollProvider />
+            <Header />
+            <main>{children}</main>
+            <Footer />
+            <BackToTop />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

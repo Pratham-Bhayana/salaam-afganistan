@@ -51,6 +51,12 @@
   margin-top: 0.65rem;
 }
 
+.detectedHint {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-gray-500);
+}
+
 .select {
   width: 100%;
   border: 1px solid var(--color-gray-300);

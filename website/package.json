@@ -9,10 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "firebase": "^12.16.0",
     "lucide-react": "^0.511.0",
+    "mrz": "^5.0.2",
     "next": "^15.3.3",
+    "pdfjs-dist": "^6.1.200",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.21",

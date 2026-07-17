@@ -6,6 +6,7 @@ import {
   BarChart3,
   Users,
   ScrollText,
+  FolderSearch,
 } from 'lucide-react';
 
 export type EmbassyNavItem = {
@@ -21,6 +22,7 @@ export type EmbassyNavItem = {
 export const embassyNav: EmbassyNavItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/', icon: LayoutDashboard, enabled: true },
   { id: 'applications', label: 'Applications', path: '/applications', icon: Inbox, enabled: true },
+  { id: 'records', label: 'Records', path: '/records', icon: FolderSearch, enabled: true },
   { id: 'chat', label: 'Chat', path: '/chat', icon: MessagesSquare, enabled: true },
   { id: 'reports', label: 'Reports', path: '/reports', icon: BarChart3, enabled: false },
   { id: 'staff', label: 'Staff', path: '/staff', icon: Users, enabled: false },

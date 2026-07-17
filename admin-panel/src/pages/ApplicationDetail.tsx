@@ -17,6 +17,7 @@ import {
   formatDate,
   getApplication,
   requestDocuments,
+  addApplicationNote,
   statusLabel,
   type ApplicationDetail as ApplicationDetailType,
   type ApplicationStatus,
@@ -216,7 +217,10 @@ export function ApplicationDetail() {
     current.allowedNextStatuses?.includes('documents_required') ||
     current.status === 'documents_required';
   const canReject = current.allowedNextStatuses?.includes('rejected');
-  const canSendEmbassy = current.allowedNextStatuses?.includes('sent_to_embassy');
+  const canSendEmbassy =
+    current.allowedNextStatuses?.includes('sent_to_embassy') ||
+    current.status === 'documents_required' ||
+    current.status === 'pending';
   const canApprove = Boolean(canIssueVisa && current.allowedNextStatuses?.includes('approved'));
   const canIssueOnly = Boolean(
     canIssueVisa && (current.status === 'approved' || current.allowedNextStatuses?.includes('visa_issued'))
@@ -445,9 +449,23 @@ export function ApplicationDetail() {
     window.setTimeout(() => setCopied(false), 1400);
   }
 
-  function onSendChat(e: FormEvent) {
+  async function onSendChat(e: FormEvent) {
     e.preventDefault();
+    if (!id || !draft.trim()) return;
+    const text = draft.trim();
     setDraft('');
+    setActionLoading(true);
+    setActionError('');
+    try {
+      await addApplicationNote(id, text);
+      const fresh = await getApplication(id);
+      setApp(fresh.data);
+    } catch (err) {
+      setDraft(text);
+      setActionError(err instanceof ApiError ? err.message : 'Failed to send message');
+    } finally {
+      setActionLoading(false);
+    }
   }
 
   async function onSendEmbassyChat(e: FormEvent) {
@@ -616,29 +634,26 @@ export function ApplicationDetail() {
                   <div>
                     <strong>{doc.label || doc.originalName}</strong>
                     <span>
-                      {doc.category.replaceAll('_', ' ')} · {formatDate(doc.createdAt)}
+                      {(doc.category || 'upload').replaceAll('_', ' ')} · {formatDate(doc.createdAt)}
                       {doc.key === 'issued_visa' && current.issuedVisa?.visaNumber
                         ? ` · ${current.issuedVisa.visaNumber}`
                         : ''}
                     </span>
                   </div>
                   <div className="app-detail__doc-actions">
-                    {doc.mimeType === 'application/pdf' || doc.key === 'issued_visa' ? (
-                      <button
-                        type="button"
-                        className="app-detail__doc-dl"
-                        onClick={() =>
-                          void onDownloadDocument(doc._id, doc.originalName || `${doc.label}.pdf`)
-                        }
-                      >
-                        <Download size={14} />
-                        Download
-                      </button>
-                    ) : (
-                      <span className="app-detail__req-status app-detail__req-status--received">
-                        Received
-                      </span>
-                    )}
+                    <button
+                      type="button"
+                      className="app-detail__doc-dl"
+                      onClick={() =>
+                        void onDownloadDocument(
+                          doc._id,
+                          doc.originalName || `${doc.label || 'document'}.pdf`
+                        )
+                      }
+                    >
+                      <Download size={14} />
+                      {doc.mimeType?.startsWith('image/') ? 'View' : 'Download'}
+                    </button>
                   </div>
                 </div>
               ))}
@@ -685,35 +700,44 @@ export function ApplicationDetail() {
                 <div className="app-detail__messages">
                   {(app.activity || [])
                     .filter((a) => a.note)
-                    .slice(-6)
-                    .map((msg, idx) => (
-                      <div
-                        key={`${msg.at}-${idx}`}
-                        className={`app-detail__bubble ${msg.actorName === 'You' ? 'is-out' : 'is-in'}`}
-                      >
-                        <p>{msg.note}</p>
-                        <span>
-                          {msg.actorName || msg.action} · {formatDate(msg.at)}
-                        </span>
-                      </div>
-                    ))}
-                  {!(app.activity || []).length ? (
+                    .slice(-40)
+                    .map((msg, idx) => {
+                      // Sender (staff) right · receiver (applicant) left
+                      const fromStaff =
+                        msg.actorType === 'staff' ||
+                        msg.action === 'note' ||
+                        msg.actorType === 'system';
+                      const fromApplicant = msg.actorType === 'applicant';
+                      const side = fromStaff || !fromApplicant ? 'is-out' : 'is-in';
+                      return (
+                        <div
+                          key={`${msg.at}-${idx}`}
+                          className={`app-detail__bubble ${side}`}
+                        >
+                          <p>{msg.note}</p>
+                          <span>
+                            {msg.actorName || msg.action} · {formatDate(msg.at)}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  {!(app.activity || []).some((a) => a.note) ? (
                     <div className="app-detail__bubble is-in">
-                      <p>Applicant chat is coming soon. Showing recent activity notes for now.</p>
+                      <p>No messages yet. Send a note to the applicant — they will get a notification.</p>
                       <span>System</span>
                     </div>
                   ) : null}
                 </div>
 
-                <form className="app-detail__composer" onSubmit={onSendChat}>
+                <form className="app-detail__composer" onSubmit={(e) => void onSendChat(e)}>
                   <input
                     type="text"
-                    placeholder="Applicant chat coming soon…"
+                    placeholder="Message the applicant…"
                     value={draft}
                     onChange={(e) => setDraft(e.target.value)}
-                    disabled
+                    disabled={actionLoading}
                   />
-                  <button type="submit" disabled>
+                  <button type="submit" disabled={actionLoading || !draft.trim()}>
                     <Send size={16} />
                     Send
                   </button>

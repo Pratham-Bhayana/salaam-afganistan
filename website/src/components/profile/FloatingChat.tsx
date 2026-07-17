@@ -4,26 +4,35 @@ import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { MessageCircle, Send, X } from "lucide-react";
 import styles from "./FloatingChat.module.css";
 
-interface ChatMessage {
+export interface ChatMessage {
   id: string;
   role: "user" | "support";
   text: string;
 }
 
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: "welcome",
-    role: "support",
-    text: "Hello! How can we help with your visa application today?",
-  },
-];
+type Props = {
+  messages?: ChatMessage[];
+};
 
-export function FloatingChat() {
-  const [open, setOpen] = useState(true);
+export function FloatingChat({ messages: externalMessages }: Props) {
+  const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [localExtra, setLocalExtra] = useState<ChatMessage[]>([]);
   const listRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+
+  const messages: ChatMessage[] = [
+    ...(externalMessages?.length
+      ? externalMessages
+      : [
+          {
+            id: "welcome",
+            role: "support" as const,
+            text: "Hello! Updates from our team about your application will appear here.",
+          },
+        ]),
+    ...localExtra,
+  ];
 
   useEffect(() => {
     if (!open) return;
@@ -45,13 +54,13 @@ export function FloatingChat() {
     const text = input.trim();
     if (!text) return;
 
-    setMessages((prev) => [
+    setLocalExtra((prev) => [
       ...prev,
       { id: `u-${Date.now()}`, role: "user", text },
       {
         id: `s-${Date.now()}`,
         role: "support",
-        text: "Thanks for your message. A support agent will reply here once messaging is connected.",
+        text: "Thanks — your note is saved locally for now. Watch Notifications for official replies from our team.",
       },
     ]);
     setInput("");
@@ -68,7 +77,7 @@ export function FloatingChat() {
         >
           <header className={styles.panelHeader}>
             <h2 id={titleId} className={styles.panelTitle}>
-              Support Chat
+              Application updates
             </h2>
             <button
               type="button"
@@ -80,44 +89,42 @@ export function FloatingChat() {
             </button>
           </header>
 
-          <div className={styles.messages} ref={listRef}>
-            {messages.map((msg) => (
+          <div className={styles.list} ref={listRef}>
+            {messages.map((m) => (
               <div
-                key={msg.id}
+                key={m.id}
                 className={`${styles.bubble} ${
-                  msg.role === "user" ? styles.bubbleUser : styles.bubbleSupport
+                  m.role === "user" ? styles.bubbleUser : styles.bubbleSupport
                 }`}
               >
-                {msg.text}
+                {m.text}
               </div>
             ))}
           </div>
 
           <form className={styles.composer} onSubmit={handleSend}>
             <input
-              type="text"
               className={styles.input}
-              placeholder="Type a message…"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              aria-label="Chat message"
+              placeholder="Write a note…"
+              aria-label="Message"
             />
-            <button type="submit" className={styles.sendBtn} aria-label="Send message">
+            <button type="submit" className={styles.sendBtn} aria-label="Send">
               <Send size={16} />
             </button>
           </form>
         </div>
-      ) : null}
-
-      <button
-        type="button"
-        className={styles.fab}
-        aria-label={open ? "Close support chat" : "Open support chat"}
-        aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
-      >
-        {open ? <X size={22} /> : <MessageCircle size={22} />}
-      </button>
+      ) : (
+        <button
+          type="button"
+          className={styles.fab}
+          aria-label="Open application updates"
+          onClick={() => setOpen(true)}
+        >
+          <MessageCircle size={22} />
+        </button>
+      )}
     </div>
   );
 }

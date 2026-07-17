@@ -258,17 +258,40 @@ const changeStatus = asyncHandler(async (req, res) => {
 const addNote = asyncHandler(async (req, res) => {
   const application = await Application.findById(req.params.id);
   if (!application) throw new ApiError(404, 'Application not found');
+  if (!req.body.note?.trim()) throw new ApiError(400, 'Note is required');
+
+  const note = String(req.body.note).trim();
+  const actorName = `${req.staff.firstName || ''} ${req.staff.lastName || ''}`.trim() || 'Staff';
 
   application.activity.push({
     action: 'note',
-    note: req.body.note,
+    note,
     actorType: 'staff',
     actorId: req.staff._id,
     actorRole: req.staff.role,
-    actorName: `${req.staff.firstName} ${req.staff.lastName}`,
+    actorName,
     at: new Date(),
   });
   await application.save();
+
+  if (application.applicant && application.personal?.email) {
+    const { notifyApplicant } = require('../../services/emailService');
+    await notifyApplicant({
+      applicantId: application.applicant,
+      email: application.personal.email,
+      type: 'staff_message',
+      title: `Message on ${application.referenceId}`,
+      body: note,
+      applicationId: application._id,
+      templateCode: 'application_status_change',
+      vars: {
+        referenceId: application.referenceId,
+        note,
+        fullName: application.personal.fullName || '',
+      },
+    });
+  }
+
   return success(res, application);
 });
 

@@ -8,14 +8,17 @@ const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination } = require('../../utils/helpers');
 const { changeApplicationStatus, APPLICATION_STATUSES } = require('../../services/statusService');
 const { getAllowedNextStatuses } = require('../../config/statusWorkflow');
-const { issueVisaForApplication } = require('../../services/visaGenerationService');
+const {
+  issueVisaForApplication,
+  previewVisaForApplication,
+  draftFieldsFromApplication,
+} = require('../../services/visaGenerationService');
 const { activityFromReq } = require('../../services/embassyActivityService');
 const {
   buildEmbassyApplicationFilter,
   assertEmbassyApplicationAccess,
 } = require('../../services/embassyAccessService');
 const { uploadRoot } = require('../../middleware/upload');
-const PlatformSettings = require('../../models/PlatformSettings');
 
 const list = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
@@ -76,19 +79,16 @@ const decide = asyncHandler(async (req, res) => {
     meta: { panel: 'embassy', ...(req.body.meta || {}) },
   });
 
+  // Embassy never auto-issues on approve — staff uses Generate visa (preview → edit → send).
+  // Explicit autoIssueVisa: true remains available for automation/tests.
   let issuedVisa = null;
-  const settings = await PlatformSettings.findOne({ key: 'default' }).lean();
-  if (
-    req.body.toStatus === APPLICATION_STATUSES.APPROVED &&
-    settings?.system?.autoGenerateVisaOnApprove !== false
-  ) {
+  if (req.body.toStatus === APPLICATION_STATUSES.APPROVED && req.body.autoIssueVisa === true) {
     try {
       issuedVisa = await issueVisaForApplication({
         applicationId: updated._id,
         embassyStaff: req.embassyStaff,
       });
     } catch (err) {
-      // Approval must stand even if PDF generation fails; admin/embassy can re-issue later.
       console.error('Embassy auto visa issue failed:', err.message);
     }
   }
@@ -104,6 +104,57 @@ const decide = asyncHandler(async (req, res) => {
   });
 
   return success(res, { application: fresh, issuedVisa });
+});
+
+const visaDraft = asyncHandler(async (req, res) => {
+  const application = await assertEmbassyApplicationAccess(req, req.params.id);
+  return success(res, {
+    applicationId: application._id,
+    referenceId: application.referenceId,
+    status: application.status,
+    visaTypeCode: application.visaTypeCode,
+    draftFields: draftFieldsFromApplication(application),
+    applicantEmail: application.personal?.email || '',
+    applicantName: application.personal?.fullName || application.passport?.fullName || '',
+  });
+});
+
+const previewVisa = asyncHandler(async (req, res) => {
+  const application = await assertEmbassyApplicationAccess(req, req.params.id);
+  const preview = await previewVisaForApplication({
+    applicationId: application._id,
+    fieldOverrides: req.body?.fieldOverrides || req.body?.overrides || undefined,
+  });
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="${preview.fileName}"`);
+  res.setHeader('X-Visa-Preview-Number', preview.visaNumber);
+  res.setHeader('X-Visa-Reference-Id', preview.referenceId || '');
+  res.setHeader('X-Applicant-Email', preview.applicantEmail || '');
+  res.setHeader('X-Applicant-Name', encodeURIComponent(preview.applicantName || ''));
+  return res.status(200).send(preview.buffer);
+});
+
+const issueVisa = asyncHandler(async (req, res) => {
+  const application = await assertEmbassyApplicationAccess(req, req.params.id);
+  const sendEmail = req.body.sendEmail !== false && req.body.sendEmail !== 'false';
+  const issued = await issueVisaForApplication({
+    applicationId: application._id,
+    embassyStaff: req.embassyStaff,
+    force: !!req.body.force,
+    sendEmail,
+    fieldOverrides: req.body.fieldOverrides || req.body.overrides || undefined,
+  });
+
+  await activityFromReq(req, {
+    action: 'visa.issue',
+    resourceType: 'IssuedVisa',
+    resourceId: issued._id,
+    application: application._id,
+    meta: { visaNumber: issued.visaNumber, sendEmail },
+  });
+
+  return success(res, issued, null, 201);
 });
 
 const assign = asyncHandler(async (req, res) => {
@@ -188,4 +239,7 @@ module.exports = {
   assign,
   addNote,
   viewDocument,
+  visaDraft,
+  previewVisa,
+  issueVisa,
 };

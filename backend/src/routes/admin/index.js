@@ -152,16 +152,21 @@ router.get(
   recordsController.lookup
 );
 
-// ─── Records & export (8.7) ──────────────────────────────────────────────────
+// ─── Records & export (8.7) — decision cases only ─────────────────────────────
 router.get(
-  '/records/summary',
+  '/records',
   requireAnyPermission(PERMISSIONS.APPLICATIONS_READ, PERMISSIONS.RECORDS_EXPORT),
-  recordsController.recordsSummary
+  recordsController.listDecisions
 );
 router.get(
   '/records/export',
   requirePermission(PERMISSIONS.RECORDS_EXPORT),
-  recordsController.exportRecords
+  recordsController.exportDecisions
+);
+router.get(
+  '/records/summary',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_READ, PERMISSIONS.RECORDS_EXPORT),
+  recordsController.recordsSummary
 );
 
 // ─── Finance (8.4) ───────────────────────────────────────────────────────────

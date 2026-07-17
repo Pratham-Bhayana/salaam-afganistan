@@ -26,11 +26,11 @@ export const APPLY_PAGE = {
   documentsHeading: "Documents Required",
   feesHeading: "Fees & Charges",
   passportHeading: "Upload Passport",
-  passportSubtitle: "Auto-extract info via OCR",
+  passportSubtitle: "OCR reads the bio page MRZ, then you review before Personal Info",
   passportInfo:
-    "Upload your passport bio page (with photo) and a passport-size photo (color, white background). OCR will auto-fill your details.",
-  passportFrontTitle: "Front Page",
-  passportFrontHint: "Bio page with photo & details",
+    "Upload a clear photo of your passport bio page (with photo + MRZ at the bottom) and a passport-size photo (color, white background). We extract name, passport number, nationality, dates, and gender for you to review.",
+  passportFrontTitle: "Passport bio page",
+  passportFrontHint: "Bio page with MRZ lines at the bottom (JPG, PNG, or PDF)",
   passportPhotoTitle: "Passport Photo",
   passportPhotoHint: "Color, white bg (45×35 mm)",
   backToHome: "Back to Home",
@@ -64,6 +64,13 @@ export const UNIVERSAL_PERSONAL_FIELDS: FormFieldDef[] = [
   { key: "passportExpiryDate", label: "Passport expiry date", dataType: "date", required: true, notes: "Must be ≥6 months from travel" },
   { key: "email", label: "Email", dataType: "email", required: true },
   { key: "phone", label: "Phone", dataType: "tel", required: true },
+  {
+    key: "address",
+    label: "Residential address",
+    dataType: "textarea",
+    required: true,
+    placeholder: "Street, city, postal code",
+  },
 ];
 
 export const UNIVERSAL_TRAVEL_FIELDS: FormFieldDef[] = [

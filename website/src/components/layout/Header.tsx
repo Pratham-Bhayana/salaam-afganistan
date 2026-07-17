@@ -18,6 +18,7 @@ import {
 import { CONTACT, NAV_LINKS, SOCIAL_LINKS } from "@/lib/site";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileMenu } from "./ProfileMenu";
+import { HeaderNotifications } from "./HeaderNotifications";
 import styles from "./Header.module.css";
 
 function SocialIcon({ icon }: { icon: (typeof SOCIAL_LINKS)[number]["icon"] }) {
@@ -90,6 +91,7 @@ export function Header() {
             </div>
             {!loading && user ? (
               <div className={styles.authBlock}>
+                <HeaderNotifications />
                 <ProfileMenu user={user} />
               </div>
             ) : !loading ? (

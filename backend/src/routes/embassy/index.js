@@ -15,6 +15,7 @@ const staffController = require('../../controllers/embassy/staffController');
 const applicationController = require('../../controllers/embassy/applicationController');
 const chatController = require('../../controllers/embassy/chatController');
 const reportsController = require('../../controllers/embassy/reportsController');
+const recordsController = require('../../controllers/embassy/recordsController');
 
 const router = express.Router();
 
@@ -79,6 +80,21 @@ router.post(
   validate,
   applicationController.decide
 );
+router.get(
+  '/applications/:id/visa-draft',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_READ),
+  applicationController.visaDraft
+);
+router.post(
+  '/applications/:id/visa-preview',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_DECIDE),
+  applicationController.previewVisa
+);
+router.post(
+  '/applications/:id/visa-issue',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_DECIDE),
+  applicationController.issueVisa
+);
 router.post(
   '/applications/:id/assign',
   requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_ASSIGN),
@@ -95,6 +111,18 @@ router.get(
   '/applications/:id/documents/:documentId',
   requireEmbassyPermission(EMBASSY_PERMISSIONS.DOCUMENTS_VIEW),
   applicationController.viewDocument
+);
+
+// ─── Records — embassy decisions only ─────────────────────────────────────────
+router.get(
+  '/records',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_READ),
+  recordsController.listDecisions
+);
+router.get(
+  '/records/export',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_READ),
+  recordsController.exportDecisions
 );
 
 // ─── Chat (9.3) + inter-embassy coordination ─────────────────────────────────

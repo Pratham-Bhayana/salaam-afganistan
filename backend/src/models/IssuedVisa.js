@@ -23,6 +23,8 @@ const issuedVisaSchema = new mongoose.Schema(
     document: { type: mongoose.Schema.Types.ObjectId, ref: 'ApplicationDocument' },
     storagePath: { type: String, required: true },
     qrPayload: String,
+    /** Random token embedded in PDF QR — scanning opens the public verify/PDF URL */
+    verificationToken: { type: String, unique: true, sparse: true, index: true },
     issuedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
     issuedByEmbassyStaff: { type: mongoose.Schema.Types.ObjectId, ref: 'EmbassyStaff' },
     issuedAt: { type: Date, default: Date.now, index: true },

@@ -1,0 +1,133 @@
+/** Frontend country slug → ISO-3166-1 alpha-2 (backend expects ISO2 uppercase). */
+const SLUG_TO_ISO2: Record<string, string> = {
+  afghanistan: "AF",
+  argentina: "AR",
+  australia: "AU",
+  azerbaijan: "AZ",
+  brazil: "BR",
+  canada: "CA",
+  china: "CN",
+  colombia: "CO",
+  france: "FR",
+  germany: "DE",
+  india: "IN",
+  indonesia: "ID",
+  iran: "IR",
+  israel: "IL",
+  italy: "IT",
+  japan: "JP",
+  kazakhstan: "KZ",
+  kyrgyzstan: "KG",
+  malaysia: "MY",
+  oman: "OM",
+  pakistan: "PK",
+  philippines: "PH",
+  qatar: "QA",
+  russia: "RU",
+  "saudi-arabia": "SA",
+  singapore: "SG",
+  "south-korea": "KR",
+  spain: "ES",
+  tajikistan: "TJ",
+  thailand: "TH",
+  turkey: "TR",
+  turkmenistan: "TM",
+  uae: "AE",
+  "united-arab-emirates": "AE",
+  "united-kingdom": "GB",
+  "united-states": "US",
+  uzbekistan: "UZ",
+};
+
+const ISO2_TO_LABEL: Record<string, string> = {
+  AF: "Afghanistan",
+  AR: "Argentina",
+  AU: "Australia",
+  AZ: "Azerbaijan",
+  BR: "Brazil",
+  CA: "Canada",
+  CN: "China",
+  CO: "Colombia",
+  DE: "Germany",
+  ES: "Spain",
+  FR: "France",
+  GB: "United Kingdom",
+  ID: "Indonesia",
+  IL: "Israel",
+  IN: "India",
+  IR: "Iran",
+  IT: "Italy",
+  JP: "Japan",
+  KG: "Kyrgyzstan",
+  KR: "South Korea",
+  KZ: "Kazakhstan",
+  MY: "Malaysia",
+  OM: "Oman",
+  PH: "Philippines",
+  PK: "Pakistan",
+  QA: "Qatar",
+  RU: "Russia",
+  SA: "Saudi Arabia",
+  SG: "Singapore",
+  TH: "Thailand",
+  TJ: "Tajikistan",
+  TM: "Turkmenistan",
+  TR: "Turkey",
+  AE: "United Arab Emirates",
+  US: "United States",
+  UZ: "Uzbekistan",
+};
+
+export function countrySlugToIso2(slug: string | null | undefined): string {
+  if (!slug) return "";
+  const raw = slug.trim();
+  if (/^[A-Za-z]{2}$/.test(raw)) return raw.toUpperCase();
+  if (/^[A-Za-z]{3}$/.test(raw)) {
+    // already ICAO-ish; leave as-is uppercase for display — fees use ISO2
+    const map3: Record<string, string> = {
+      AFG: "AF",
+      ARE: "AE",
+      ARG: "AR",
+      AUS: "AU",
+      BRA: "BR",
+      CAN: "CA",
+      CHN: "CN",
+      COL: "CO",
+      DEU: "DE",
+      ESP: "ES",
+      FRA: "FR",
+      GBR: "GB",
+      IND: "IN",
+      IDN: "ID",
+      IRN: "IR",
+      ISR: "IL",
+      ITA: "IT",
+      JPN: "JP",
+      KAZ: "KZ",
+      KGZ: "KG",
+      KOR: "KR",
+      MYS: "MY",
+      OMN: "OM",
+      PAK: "PK",
+      PHL: "PH",
+      QAT: "QA",
+      RUS: "RU",
+      SAU: "SA",
+      SGP: "SG",
+      THA: "TH",
+      TJK: "TJ",
+      TKM: "TM",
+      TUR: "TR",
+      USA: "US",
+      UZB: "UZ",
+    };
+    return map3[raw.toUpperCase()] || raw.toUpperCase();
+  }
+  return SLUG_TO_ISO2[raw.toLowerCase()] || raw.toUpperCase();
+}
+
+export function iso2ToLabel(code: string | null | undefined): string {
+  if (!code) return "";
+  const upper = code.toUpperCase();
+  return ISO2_TO_LABEL[upper] || upper;
+}

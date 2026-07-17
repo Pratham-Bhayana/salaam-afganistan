@@ -31,7 +31,7 @@ function GoogleIcon() {
 }
 
 export function LoginClient() {
-  const { user, loading, signIn, signInWithGoogle } = useAuth();
+  const { user, loading, firebaseReady, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get("redirect") || "/";
@@ -94,8 +94,12 @@ export function LoginClient() {
 
         <h1 className={styles.heading}>Welcome Back</h1>
         <p className={styles.subtitle}>Sign in to continue your visa application</p>
-        <p className={styles.forgotText}>Demo password / OTP: 123456</p>
 
+        {!firebaseReady ? (
+          <p className={styles.formError}>
+            Firebase is not configured. Add NEXT_PUBLIC_FIREBASE_* keys to website/.env
+          </p>
+        ) : null}
         {error ? <p className={styles.formError}>{error}</p> : null}
 
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
@@ -128,7 +132,7 @@ export function LoginClient() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                placeholder="123456"
+                placeholder="Your password"
               />
               <button
                 type="button"
@@ -146,7 +150,7 @@ export function LoginClient() {
           <button
             type="submit"
             className={`btn btn-primary btn-full ${styles.submitBtn}`}
-            disabled={submitting || googleSubmitting}
+            disabled={submitting || googleSubmitting || !firebaseReady}
           >
             {submitting ? "Signing in…" : "Sign In"}
           </button>
@@ -158,7 +162,7 @@ export function LoginClient() {
           type="button"
           className={`btn btn-outline btn-full ${styles.googleBtn}`}
           onClick={handleGoogleSignIn}
-          disabled={submitting || googleSubmitting}
+          disabled={submitting || googleSubmitting || !firebaseReady}
         >
           <GoogleIcon />
           {googleSubmitting ? "Signing in…" : "Sign in with Google"}

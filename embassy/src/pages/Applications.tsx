@@ -10,7 +10,7 @@ const POLL_MS = 8000;
 
 export function Applications() {
   const navigate = useNavigate();
-  const [inbox, setInbox] = useState('active');
+  const [inbox, setInbox] = useState('all');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(1);
