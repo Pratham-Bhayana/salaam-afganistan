@@ -2,6 +2,7 @@ import { Shield, Pencil, Trash2 } from 'lucide-react';
 import {
   STAFF_SECTIONS,
   initials,
+  roleCssModifier,
   sectionAccessCount,
   type StaffMember,
 } from '../data/mockStaff';
@@ -63,7 +64,7 @@ export function StaffDirectory({
                   onChange={() => onToggleSelect(member._id)}
                   aria-label={`Select ${member.fullName}`}
                 />
-                <span className={`staff-role staff-role--${member.role.toLowerCase()}`}>
+                <span className={`staff-role staff-role--${roleCssModifier(member.role)}`}>
                   {member.role}
                 </span>
                 <span className={`staff-status${member.status === 'Active' ? ' is-active' : ''}`}>
@@ -168,7 +169,7 @@ export function StaffDirectory({
                     </div>
                   </td>
                   <td>
-                    <span className={`staff-role staff-role--${member.role.toLowerCase()}`}>
+                    <span className={`staff-role staff-role--${roleCssModifier(member.role)}`}>
                       {member.role}
                     </span>
                   </td>

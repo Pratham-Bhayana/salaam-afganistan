@@ -22,12 +22,19 @@ const staffSchema = new mongoose.Schema(
       index: true,
     },
     phone: { type: String, trim: true },
+    designation: { type: String, trim: true },
     isActive: { type: Boolean, default: true, index: true },
     lastLoginAt: { type: Date },
     passwordResetTokenHash: { type: String, select: false },
     passwordResetExpiresAt: { type: Date, select: false },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff' },
     meta: { type: Map, of: String },
+    /** Per-section UI access overrides layered on top of role defaults */
+    sectionOverrides: {
+      type: Map,
+      of: Boolean,
+      default: {},
+    },
   },
   { timestamps: true }
 );

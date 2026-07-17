@@ -46,7 +46,7 @@ export type StaffModalMode = 'add' | 'edit' | 'access' | 'delete' | null;
 
 export type StaffDraftAccount = {
   fullName: string;
-  destination: string;
+  designation: string;
   email: string;
   password: string;
   phone: string;
@@ -61,6 +61,7 @@ type Props = {
   draftSections: Record<SectionKey, boolean>;
   formError: string;
   activeMember: StaffMember | null;
+  saving: boolean;
   onClose: () => void;
   onDraftChange: (draft: StaffDraftAccount) => void;
   onDraftRoleChange: (role: StaffRole) => void;
@@ -78,7 +79,7 @@ type Props = {
 export function emptyStaffDraft(): StaffDraftAccount {
   return {
     fullName: '',
-    destination: '',
+    designation: '',
     email: '',
     password: '',
     phone: '',
@@ -89,9 +90,11 @@ export function emptyStaffDraft(): StaffDraftAccount {
 function SectionAccessGrid({
   sections,
   onToggle,
+  disabled,
 }: {
   sections: Record<SectionKey, boolean>;
   onToggle: (key: SectionKey) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="staff-sections">
@@ -99,7 +102,10 @@ function SectionAccessGrid({
         const Icon = SECTION_ICONS[section.key];
         const on = sections[section.key];
         return (
-          <label key={section.key} className={`staff-section${on ? ' is-on' : ''}`}>
+          <label
+            key={section.key}
+            className={`staff-section${on ? ' is-on' : ''}${disabled ? ' is-disabled' : ''}`}
+          >
             <span className="staff-section__icon" aria-hidden>
               <Icon size={18} strokeWidth={1.75} />
             </span>
@@ -107,6 +113,7 @@ function SectionAccessGrid({
             <input
               type="checkbox"
               checked={on}
+              disabled={disabled}
               onChange={() => onToggle(section.key)}
               aria-label={`${section.label} access`}
             />
@@ -126,6 +133,7 @@ export function StaffModals({
   draftSections,
   formError,
   activeMember,
+  saving,
   onClose,
   onDraftChange,
   onDraftRoleChange,
@@ -187,14 +195,16 @@ export function StaffModals({
                   onChange={(e) => onDraftChange({ ...draft, fullName: e.target.value })}
                   placeholder="e.g., Aisha Patel"
                   required
+                  disabled={saving}
                 />
               </label>
               <label>
-                Destination
+                Designation
                 <input
-                  value={draft.destination}
-                  onChange={(e) => onDraftChange({ ...draft, destination: e.target.value })}
-                  placeholder="e.g., UAE, UK, Singapore"
+                  value={draft.designation}
+                  onChange={(e) => onDraftChange({ ...draft, designation: e.target.value })}
+                  placeholder="e.g., Senior Case Manager, Visa Officer"
+                  disabled={saving}
                 />
               </label>
               <label>
@@ -205,6 +215,7 @@ export function StaffModals({
                   onChange={(e) => onDraftChange({ ...draft, email: e.target.value })}
                   placeholder="name@example.com"
                   required
+                  disabled={saving}
                 />
               </label>
               <label>
@@ -215,6 +226,7 @@ export function StaffModals({
                   onChange={(e) => onDraftChange({ ...draft, password: e.target.value })}
                   placeholder="Create a password"
                   required
+                  disabled={saving}
                 />
               </label>
               <label>
@@ -223,6 +235,7 @@ export function StaffModals({
                   value={draft.phone}
                   onChange={(e) => onDraftChange({ ...draft, phone: e.target.value })}
                   placeholder="+91 98765 43210"
+                  disabled={saving}
                 />
               </label>
               <label>
@@ -232,6 +245,7 @@ export function StaffModals({
                   onChange={(e) =>
                     onDraftChange({ ...draft, status: e.target.value as StaffStatus })
                   }
+                  disabled={saving}
                 >
                   <option value="Active">Active</option>
                   <option value="Inactive">Inactive</option>
@@ -242,6 +256,7 @@ export function StaffModals({
                 <select
                   value={draftRole}
                   onChange={(e) => onDraftRoleChange(e.target.value as StaffRole)}
+                  disabled={saving}
                 >
                   {STAFF_ROLES.map((role) => (
                     <option key={role} value={role}>
@@ -251,10 +266,10 @@ export function StaffModals({
                 </select>
               </label>
               <div className="modal-form__actions staff-form-actions">
-                <button type="button" className="is-ghost" onClick={onClose}>
+                <button type="button" className="is-ghost" onClick={onClose} disabled={saving}>
                   Cancel
                 </button>
-                <button type="submit" className="is-primary">
+                <button type="submit" className="is-primary" disabled={saving}>
                   Next: Permissions
                   <ChevronRight size={16} />
                 </button>
@@ -270,23 +285,37 @@ export function StaffModals({
                   </p>
                 </div>
                 <div className="staff-access-bulk">
-                  <button type="button" onClick={() => onSetAllSections(true)}>
+                  <button type="button" onClick={() => onSetAllSections(true)} disabled={saving}>
                     Allow All
                   </button>
-                  <button type="button" onClick={() => onSetAllSections(false)}>
+                  <button type="button" onClick={() => onSetAllSections(false)} disabled={saving}>
                     Disallow All
                   </button>
                 </div>
               </div>
-              <SectionAccessGrid sections={draftSections} onToggle={onToggleSection} />
+              <SectionAccessGrid
+                sections={draftSections}
+                onToggle={onToggleSection}
+                disabled={saving}
+              />
               <div className="modal-form__actions staff-form-actions">
-                <button type="button" className="is-ghost" onClick={() => onSetAddStep(1)}>
+                <button
+                  type="button"
+                  className="is-ghost"
+                  onClick={() => onSetAddStep(1)}
+                  disabled={saving}
+                >
                   <ChevronLeft size={16} />
                   Back
                 </button>
-                <button type="button" className="is-primary" onClick={onCreateStaff}>
+                <button
+                  type="button"
+                  className="is-primary"
+                  onClick={onCreateStaff}
+                  disabled={saving}
+                >
                   <Check size={16} />
-                  Create Staff
+                  {saving ? 'Creating…' : 'Create Staff'}
                 </button>
               </div>
             </div>
@@ -314,22 +343,30 @@ export function StaffModals({
               value={draft.fullName}
               onChange={(e) => onDraftChange({ ...draft, fullName: e.target.value })}
               required
+              disabled={saving}
             />
           </label>
           <label>
-            Destination
+            Designation
             <input
-              value={draft.destination}
-              onChange={(e) => onDraftChange({ ...draft, destination: e.target.value })}
+              value={draft.designation}
+              onChange={(e) => onDraftChange({ ...draft, designation: e.target.value })}
+              placeholder="e.g., Senior Case Manager, Visa Officer"
+              disabled={saving}
             />
           </label>
           <label>
             Email
+            <input type="email" value={draft.email} readOnly disabled title="Email cannot be changed" />
+          </label>
+          <label>
+            New password
             <input
-              type="email"
-              value={draft.email}
-              onChange={(e) => onDraftChange({ ...draft, email: e.target.value })}
-              required
+              type="password"
+              value={draft.password}
+              onChange={(e) => onDraftChange({ ...draft, password: e.target.value })}
+              placeholder="Leave blank to keep current"
+              disabled={saving}
             />
           </label>
           <label>
@@ -337,6 +374,7 @@ export function StaffModals({
             <input
               value={draft.phone}
               onChange={(e) => onDraftChange({ ...draft, phone: e.target.value })}
+              disabled={saving}
             />
           </label>
           <label>
@@ -346,6 +384,7 @@ export function StaffModals({
               onChange={(e) =>
                 onDraftChange({ ...draft, status: e.target.value as StaffStatus })
               }
+              disabled={saving}
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
@@ -356,6 +395,7 @@ export function StaffModals({
             <select
               value={draftRole}
               onChange={(e) => onDraftRoleChange(e.target.value as StaffRole)}
+              disabled={saving}
             >
               {STAFF_ROLES.map((role) => (
                 <option key={role} value={role}>
@@ -365,11 +405,11 @@ export function StaffModals({
             </select>
           </label>
           <div className="modal-form__actions staff-form-actions">
-            <button type="button" className="is-ghost" onClick={onClose}>
+            <button type="button" className="is-ghost" onClick={onClose} disabled={saving}>
               Cancel
             </button>
-            <button type="submit" className="is-primary">
-              Save changes
+            <button type="submit" className="is-primary" disabled={saving}>
+              {saving ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </form>
@@ -381,6 +421,7 @@ export function StaffModals({
         onClose={onClose}
         className="modal--wide"
       >
+        {formError ? <div className="modal-form__error">{formError}</div> : null}
         {activeMember ? (
           <div className="staff-access-body">
             <p className="staff-access-context">
@@ -394,22 +435,26 @@ export function StaffModals({
                 </p>
               </div>
               <div className="staff-access-bulk">
-                <button type="button" onClick={() => onSetAllSections(true)}>
+                <button type="button" onClick={() => onSetAllSections(true)} disabled={saving}>
                   Allow All
                 </button>
-                <button type="button" onClick={() => onSetAllSections(false)}>
+                <button type="button" onClick={() => onSetAllSections(false)} disabled={saving}>
                   Disallow All
                 </button>
               </div>
             </div>
-            <SectionAccessGrid sections={draftSections} onToggle={onToggleSection} />
+            <SectionAccessGrid
+              sections={draftSections}
+              onToggle={onToggleSection}
+              disabled={saving}
+            />
             <div className="modal-form__actions staff-form-actions">
-              <button type="button" className="is-ghost" onClick={onClose}>
+              <button type="button" className="is-ghost" onClick={onClose} disabled={saving}>
                 Cancel
               </button>
-              <button type="button" className="is-primary" onClick={onSaveAccess}>
+              <button type="button" className="is-primary" onClick={onSaveAccess} disabled={saving}>
                 <Check size={16} />
-                Save Access
+                {saving ? 'Saving…' : 'Save Access'}
               </button>
             </div>
           </div>
@@ -417,16 +462,17 @@ export function StaffModals({
       </Modal>
 
       <Modal open={modal === 'delete'} title="Delete Staff Member" onClose={onClose}>
+        {formError ? <div className="modal-form__error">{formError}</div> : null}
         <p className="staff-delete-copy">
           Deactivate and remove <strong>{activeMember?.fullName}</strong> from the staff list?
           This action can be undone by adding them again later.
         </p>
         <div className="modal-form__actions">
-          <button type="button" className="is-ghost" onClick={onClose}>
+          <button type="button" className="is-ghost" onClick={onClose} disabled={saving}>
             Cancel
           </button>
-          <button type="button" className="is-danger" onClick={onConfirmDelete}>
-            Delete
+          <button type="button" className="is-danger" onClick={onConfirmDelete} disabled={saving}>
+            {saving ? 'Deleting…' : 'Delete'}
           </button>
         </div>
       </Modal>

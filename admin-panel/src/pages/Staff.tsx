@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StaffOverview, type StaffViewMode } from '../components/StaffOverview';
 import { StaffDirectory } from '../components/StaffDirectory';
 import {
@@ -9,23 +9,32 @@ import {
 } from '../components/StaffModals';
 import {
   emptySections,
-  mockStaff,
   sectionAccessCount,
   STAFF_SECTIONS,
   type SectionKey,
   type StaffMember,
   type StaffRole,
 } from '../data/mockStaff';
+import {
+  ApiError,
+  createStaffAPI,
+  deleteStaffAPI,
+  getAllStaffAPI,
+  transformStaff,
+  updateStaffAPI,
+  updateStaffPermissionsAPI,
+} from '../api/staff';
 import './Staff.css';
 
 const TOTAL_SECTIONS = STAFF_SECTIONS.length;
 
-function todayIso() {
-  return new Date().toISOString().slice(0, 10);
-}
-
 export function Staff() {
-  const [staff, setStaff] = useState<StaffMember[]>(mockStaff);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'All' | StaffRole>('All');
   const [view, setView] = useState<StaffViewMode>('grid');
@@ -38,6 +47,28 @@ export function Staff() {
   const [draftSections, setDraftSections] = useState(emptySections(false));
   const [draftRole, setDraftRole] = useState<StaffRole>('Coordinator');
   const [formError, setFormError] = useState('');
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 3200);
+  }, []);
+
+  const loadStaff = useCallback(async () => {
+    try {
+      const { data } = await getAllStaffAPI({ page: 1, limit: 100 });
+      setStaff(data);
+      setError('');
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Failed to load staff');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    void loadStaff();
+  }, [loadStaff]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -69,6 +100,7 @@ export function Staff() {
   const allSelected = filtered.length > 0 && filtered.every((s) => selectedIds.has(s._id));
 
   function closeModal() {
+    if (saving) return;
     setModal(null);
     setActiveId(null);
     setAddStep(1);
@@ -109,10 +141,10 @@ export function Staff() {
     setActiveId(member._id);
     setDraft({
       fullName: member.fullName,
-      destination: member.destination,
+      designation: member.designation === '—' ? '' : member.designation,
       email: member.email,
       password: '',
-      phone: member.phone,
+      phone: member.phone === '—' ? '' : member.phone,
       status: member.status,
     });
     setDraftRole(member.role);
@@ -122,6 +154,7 @@ export function Staff() {
 
   function openAccess(member: StaffMember) {
     setActiveId(member._id);
+    // member.sections already = role defaults merged with API sectionOverrides
     setDraftSections({ ...member.sections });
     setFormError('');
     setModal('access');
@@ -129,6 +162,7 @@ export function Staff() {
 
   function openDelete(member: StaffMember) {
     setActiveId(member._id);
+    setFormError('');
     setModal('delete');
   }
 
@@ -138,72 +172,124 @@ export function Staff() {
     if (requirePassword && draft.password.trim().length < 8) {
       return 'Password must be at least 8 characters.';
     }
+    if (!requirePassword && draft.password.trim() && draft.password.trim().length < 8) {
+      return 'Password must be at least 8 characters.';
+    }
     return '';
   }
 
-  function createStaff() {
-    const names = draft.fullName.trim().split(/\s+/);
-    const member: StaffMember = {
-      _id: String(Date.now()),
-      fullName: draft.fullName.trim(),
-      email: draft.email.trim().toLowerCase(),
-      phone: draft.phone.trim() || '—',
-      destination: draft.destination.trim() || '—',
-      role: draftRole,
-      status: draft.status,
-      joinedAt: todayIso(),
-      lastActiveAt: todayIso(),
-      sections: { ...draftSections },
-    };
-    if (names.length === 1 && !member.fullName) return;
-    setStaff((prev) => [member, ...prev]);
-    closeModal();
-  }
-
-  function saveEdit() {
-    if (!activeId) return;
-    const error = validateAccount(false);
-    if (error) {
-      setFormError(error);
+  async function createStaff() {
+    const validationError = validateAccount(true);
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
-    setStaff((prev) =>
-      prev.map((member) =>
-        member._id === activeId
-          ? {
-              ...member,
-              fullName: draft.fullName.trim(),
-              destination: draft.destination.trim() || '—',
-              email: draft.email.trim().toLowerCase(),
-              phone: draft.phone.trim() || '—',
-              status: draft.status,
-              role: draftRole,
-            }
-          : member
-      )
-    );
-    closeModal();
+
+    setSaving(true);
+    setFormError('');
+    try {
+      await createStaffAPI({
+        fullName: draft.fullName.trim(),
+        email: draft.email.trim(),
+        password: draft.password,
+        role: draftRole,
+        phone: draft.phone.trim() || undefined,
+        designation: draft.designation.trim() || undefined,
+        status: draft.status,
+        sections: draftSections,
+      });
+      setModal(null);
+      setActiveId(null);
+      setAddStep(1);
+      setDraft(emptyStaffDraft());
+      setDraftSections(emptySections(false));
+      setDraftRole('Coordinator');
+      setFormError('');
+      await loadStaff();
+      showToast('Staff member created.');
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Failed to create staff member');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function saveAccess() {
+  async function saveEdit() {
     if (!activeId) return;
-    setStaff((prev) =>
-      prev.map((member) =>
-        member._id === activeId ? { ...member, sections: { ...draftSections } } : member
-      )
-    );
-    closeModal();
+    const validationError = validateAccount(false);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    setSaving(true);
+    setFormError('');
+    try {
+      await updateStaffAPI(activeId, {
+        fullName: draft.fullName.trim(),
+        phone: draft.phone.trim(),
+        designation: draft.designation.trim(),
+        role: draftRole,
+        status: draft.status,
+        password: draft.password.trim() || undefined,
+      });
+      setModal(null);
+      setActiveId(null);
+      setDraft(emptyStaffDraft());
+      setDraftRole('Coordinator');
+      setFormError('');
+      await loadStaff();
+      showToast('Staff member updated.');
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Failed to update staff member');
+    } finally {
+      setSaving(false);
+    }
   }
 
-  function confirmDelete() {
+  async function saveAccess() {
     if (!activeId) return;
-    setStaff((prev) => prev.filter((member) => member._id !== activeId));
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      next.delete(activeId);
-      return next;
-    });
-    closeModal();
+
+    setSaving(true);
+    setFormError('');
+    try {
+      const { data } = await updateStaffPermissionsAPI(activeId, draftSections);
+      const updated = transformStaff(data);
+      setStaff((prev) => prev.map((member) => (member._id === activeId ? updated : member)));
+      setModal(null);
+      setActiveId(null);
+      setDraftSections(emptySections(false));
+      setFormError('');
+      showToast('Section access saved.');
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Failed to save access');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function confirmDelete() {
+    if (!activeId) return;
+
+    setSaving(true);
+    setFormError('');
+    try {
+      await deleteStaffAPI(activeId);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(activeId);
+        return next;
+      });
+      setModal(null);
+      setActiveId(null);
+      setFormError('');
+      await loadStaff();
+      showToast('Staff member deactivated.');
+    } catch (err) {
+      setFormError(err instanceof ApiError ? err.message : 'Failed to delete staff member');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -223,15 +309,49 @@ export function Staff() {
         onToggleSelectAll={toggleSelectAll}
       />
 
-      <StaffDirectory
-        view={view}
-        members={filtered}
-        selectedIds={selectedIds}
-        onToggleSelect={toggleSelect}
-        onManageAccess={openAccess}
-        onEdit={openEdit}
-        onDelete={openDelete}
-      />
+      {toast ? (
+        <div className="staff-page__toast" role="status">
+          {toast}
+        </div>
+      ) : null}
+      {error ? (
+        <div className="staff-page__error" role="alert">
+          {error}
+          <button
+            type="button"
+            className="staff-page__retry"
+            onClick={() => {
+              setLoading(true);
+              void loadStaff();
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      ) : null}
+      {loading && !staff.length ? (
+        <p className="staff-page__loading">Loading staff…</p>
+      ) : null}
+
+      {!loading && !error && filtered.length === 0 ? (
+        <p className="staff-page__empty">
+          {staff.length === 0
+            ? 'No staff members yet. Add your first staff member to get started.'
+            : 'No staff members match your filters.'}
+        </p>
+      ) : null}
+
+      {filtered.length > 0 ? (
+        <StaffDirectory
+          view={view}
+          members={filtered}
+          selectedIds={selectedIds}
+          onToggleSelect={toggleSelect}
+          onManageAccess={openAccess}
+          onEdit={openEdit}
+          onDelete={openDelete}
+        />
+      ) : null}
 
       <StaffModals
         modal={modal}
@@ -241,6 +361,7 @@ export function Staff() {
         draftSections={draftSections}
         formError={formError}
         activeMember={activeMember}
+        saving={saving}
         onClose={closeModal}
         onDraftChange={setDraft}
         onDraftRoleChange={setDraftRole}
@@ -251,10 +372,10 @@ export function Staff() {
           setDraftSections((prev) => ({ ...prev, [key]: !prev[key] }))
         }
         onValidateAccount={validateAccount}
-        onCreateStaff={createStaff}
-        onSaveEdit={saveEdit}
-        onSaveAccess={saveAccess}
-        onConfirmDelete={confirmDelete}
+        onCreateStaff={() => void createStaff()}
+        onSaveEdit={() => void saveEdit()}
+        onSaveAccess={() => void saveAccess()}
+        onConfirmDelete={() => void confirmDelete()}
       />
     </div>
   );
