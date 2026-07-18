@@ -99,6 +99,7 @@ const ROLE_SECTION_DEFAULTS: Record<string, SectionKey[]> = {
     'receptionist',
     'settings',
     'audit',
+    'embassy-activity',
   ],
   case_manager: [
     'dashboard',
@@ -108,6 +109,7 @@ const ROLE_SECTION_DEFAULTS: Record<string, SectionKey[]> = {
     'chat',
     'templates',
     'audit',
+    'embassy-activity',
   ],
   finance: ['dashboard', 'applications', 'records', 'finance'],
   receptionist: ['dashboard', 'applications', 'receptionist'],

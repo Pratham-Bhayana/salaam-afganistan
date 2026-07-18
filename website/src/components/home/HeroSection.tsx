@@ -2,15 +2,17 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import { APPLYING_FROM_OPTIONS, HERO_SLIDES } from "@/data/home";
 import { detectApplyingFromCountry } from "@/lib/detectCountry";
+import { EligibilityModal } from "@/components/EligibilityModal";
 import styles from "./HeroSection.module.css";
 
 export function HeroSection() {
   const [slideIndex, setSlideIndex] = useState(0);
   const [applyingFrom, setApplyingFrom] = useState("");
   const [locationDetected, setLocationDetected] = useState(false);
+  const [eligibilityOpen, setEligibilityOpen] = useState(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -101,6 +103,15 @@ export function HeroSection() {
               >
                 Apply Now
               </button>
+
+              <button
+                type="button"
+                className={styles.eligibilityLink}
+                onClick={() => setEligibilityOpen(true)}
+              >
+                Check your eVisa eligibility
+                <ArrowRight size={15} aria-hidden />
+              </button>
             </form>
           </div>
         </div>
@@ -162,6 +173,8 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      <EligibilityModal open={eligibilityOpen} onClose={() => setEligibilityOpen(false)} />
     </section>
   );
 }

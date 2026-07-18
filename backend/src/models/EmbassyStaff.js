@@ -28,6 +28,7 @@ const embassyStaffSchema = new mongoose.Schema(
       index: true,
     },
     phone: { type: String, trim: true },
+    designation: { type: String, trim: true },
     /**
      * all = every application routed to this embassy
      * assigned = only applications assigned to this staff member
@@ -36,6 +37,15 @@ const embassyStaffSchema = new mongoose.Schema(
       type: String,
       enum: ['all', 'assigned'],
       default: 'all',
+    },
+    /**
+     * Per-staff UI section access overrides on top of role defaults.
+     * Mirrors the admin Staff model — keys are embassy panel section ids.
+     */
+    sectionOverrides: {
+      type: Map,
+      of: Boolean,
+      default: undefined,
     },
     isActive: { type: Boolean, default: true, index: true },
     lastLoginAt: { type: Date },

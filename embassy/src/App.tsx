@@ -7,6 +7,8 @@ import { Applications } from './pages/Applications';
 import { ApplicationDetail } from './pages/ApplicationDetail';
 import { Chat } from './pages/Chat';
 import { Records } from './pages/Records';
+import { Staff } from './pages/Staff';
+import { ActivityLogs } from './pages/ActivityLogs';
 import { Login } from './pages/Login';
 
 export default function App() {
@@ -27,6 +29,8 @@ export default function App() {
             <Route path="applications/:id" element={<ApplicationDetail />} />
             <Route path="records" element={<Records />} />
             <Route path="chat" element={<Chat />} />
+            <Route path="staff" element={<Staff />} />
+            <Route path="activity" element={<ActivityLogs />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

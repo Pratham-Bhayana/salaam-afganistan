@@ -94,6 +94,16 @@
   color: #fff;
 }
 
+.app-detail__btn--delete {
+  background: transparent;
+  border: 1px solid rgba(214, 69, 69, 0.35);
+  color: #d64545;
+}
+
+.app-detail__btn--delete:hover {
+  background: rgba(214, 69, 69, 0.08);
+}
+
 .app-detail__alert--error {
   background: rgba(214, 69, 69, 0.12);
   color: #9a2b2b;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   Building2,
   Copy,
@@ -9,10 +9,12 @@ import {
   Plane,
   Send,
   Shield,
+  Trash2,
   UserRound,
 } from 'lucide-react';
 import {
   changeApplicationStatus,
+  deleteApplication,
   embassyLabel,
   formatDate,
   getApplication,
@@ -39,6 +41,7 @@ import { ApiError, staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import './ApplicationDetail.css';
 import '../components/Modal.css';
 
@@ -53,8 +56,12 @@ function embassyIdOf(embassy: ApplicationDetailType['embassy']): string | null {
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { staff } = useAuth();
   const canChat = staffHasPermission(staff, 'chat:access');
+  const canDelete = staffHasPermission(staff, 'applications:write');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const canIssueVisa =
     staffHasPermission(staff, 'visas_issued:manage') || staff?.role === 'super_admin';
   const staffId = staff?.id || '';
@@ -553,8 +560,47 @@ export function ApplicationDetail() {
           <button type="button" className="app-detail__icon-btn" aria-label="Download dossier">
             <Download size={18} strokeWidth={2} />
           </button>
+
+          {canDelete ? (
+            <button
+              type="button"
+              className="app-detail__icon-btn app-detail__icon-btn--danger"
+              aria-label="Delete application"
+              title="Delete application"
+              onClick={() => setDeleteOpen(true)}
+              disabled={actionLoading}
+            >
+              <Trash2 size={18} strokeWidth={2} />
+            </button>
+          ) : null}
         </div>
       </header>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete application"
+        message={
+          <>
+            You are about to permanently delete <strong>{current.referenceId}</strong> along with
+            all its documents, payments, chats, and issued visa. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={deleting}
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setDeleting(true);
+          try {
+            await deleteApplication(current._id);
+            navigate('/applications', { replace: true });
+          } catch (err) {
+            setActionError(err instanceof ApiError ? err.message : 'Delete failed');
+            setDeleteOpen(false);
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
 
       <div className="app-detail__body">
         {actionError && !requestOpen && !rejectOpen && !sendEmbassyOpen && !confirmSendOpen ? (

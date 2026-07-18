@@ -14,7 +14,7 @@ const {
 } = require('../../utils/helpers');
 const { changeApplicationStatus, APPLICATION_STATUSES } = require('../../services/statusService');
 const { getAllowedNextStatuses } = require('../../config/statusWorkflow');
-const { ROLES } = require('../../config/permissions');
+const { ROLES, roleHasPermission, PERMISSIONS } = require('../../config/permissions');
 const { auditFromReq } = require('../../services/auditService');
 const { issueVisaForApplication } = require('../../services/visaGenerationService');
 const PlatformSettings = require('../../models/PlatformSettings');
@@ -166,6 +166,13 @@ const update = asyncHandler(async (req, res) => {
   const application = await Application.findById(req.params.id);
   if (!application) throw new ApiError(404, 'Application not found');
 
+  const hasWrite = roleHasPermission(req.staff.role, PERMISSIONS.APPLICATIONS_WRITE);
+  const hasIntake = roleHasPermission(req.staff.role, PERMISSIONS.APPLICATIONS_INTAKE);
+
+  if (!hasWrite && hasIntake && application.status !== APPLICATION_STATUSES.DRAFT) {
+    throw new ApiError(403, 'Reception can only edit draft applications');
+  }
+
   const before = {
     personal: application.personal,
     passport: application.passport,
@@ -295,6 +302,21 @@ const addNote = asyncHandler(async (req, res) => {
   return success(res, application);
 });
 
+const remove = asyncHandler(async (req, res) => {
+  const { deleteApplicationCascade } = require('../../services/applicationDeletionService');
+  const snapshot = await deleteApplicationCascade(req.params.id);
+  if (!snapshot) throw new ApiError(404, 'Application not found');
+
+  await auditFromReq(req, {
+    action: 'application.delete',
+    resourceType: 'Application',
+    resourceId: req.params.id,
+    before: snapshot,
+  });
+
+  return success(res, { deleted: true, referenceId: snapshot.referenceId });
+});
+
 module.exports = {
   createValidators,
   list,
@@ -303,5 +325,6 @@ module.exports = {
   update,
   changeStatus,
   addNote,
+  remove,
   buildApplicationFilter,
 };

@@ -1,6 +1,8 @@
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut } from 'lucide-react';
 import { adminNav } from '../nav/adminNav';
+import { isNavItemVisible } from '../nav/navAccess';
+import { staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import './Sidebar.css';
 
@@ -24,20 +26,23 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <div className="sidebar__mark" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="sidebar__brand-text">
-          <strong>Salaam</strong>
-          <span>Afghanistan</span>
+        <div className="sidebar__logos">
+          <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="sidebar__logo" />
+          <span className="sidebar__logo-divider" aria-hidden />
+          <img
+            src="/raizing-logo.png"
+            alt="Raizing Global"
+            className="sidebar__logo sidebar__logo--raizing"
+          />
         </div>
       </div>
 
       <nav className="sidebar__nav" aria-label="Admin navigation">
         {adminNav.map((item) => {
           const Icon = item.icon;
+          const visible = isNavItemVisible(staff, item, staffHasPermission);
+
+          if (!visible) return null;
 
           if (!item.enabled) {
             return (

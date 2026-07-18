@@ -52,6 +52,7 @@ const create = asyncHandler(async (req, res) => {
     lastName: req.body.lastName,
     email: req.body.email.toLowerCase(),
     phone: req.body.phone,
+    designation: req.body.designation,
     role: req.body.role,
     accessMode: req.body.accessMode || 'all',
     passwordHash,
@@ -78,6 +79,7 @@ const update = asyncHandler(async (req, res) => {
   if (req.body.firstName != null) staff.firstName = req.body.firstName;
   if (req.body.lastName != null) staff.lastName = req.body.lastName;
   if (req.body.phone != null) staff.phone = req.body.phone;
+  if (req.body.designation != null) staff.designation = req.body.designation;
   if (req.body.role != null) {
     if (!Object.values(EMBASSY_ROLES).includes(req.body.role)) {
       throw new ApiError(400, 'Invalid role');
@@ -120,6 +122,33 @@ const remove = asyncHandler(async (req, res) => {
   return success(res, staff);
 });
 
+/** PATCH /staff/:id/permissions — persist sectionOverrides on top of role defaults */
+const updatePermissions = asyncHandler(async (req, res) => {
+  const { sectionOverrides } = req.body;
+  if (
+    sectionOverrides == null ||
+    typeof sectionOverrides !== 'object' ||
+    Array.isArray(sectionOverrides)
+  ) {
+    throw new ApiError(400, 'sectionOverrides must be an object');
+  }
+
+  const staff = await EmbassyStaff.findOne({ _id: req.params.id, embassy: req.embassyId });
+  if (!staff) throw new ApiError(404, 'Embassy staff not found');
+
+  staff.sectionOverrides = sectionOverrides;
+  await staff.save();
+
+  await activityFromReq(req, {
+    action: 'staff.update',
+    resourceType: 'EmbassyStaff',
+    resourceId: staff._id,
+    meta: { sectionOverrides },
+  });
+
+  return success(res, staff);
+});
+
 module.exports = {
   createValidators,
   list,
@@ -127,4 +156,5 @@ module.exports = {
   create,
   update,
   remove,
+  updatePermissions,
 };

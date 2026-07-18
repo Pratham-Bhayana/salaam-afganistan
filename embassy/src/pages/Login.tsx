@@ -43,6 +43,15 @@ export function Login() {
         <div className="login-hero__grid" aria-hidden />
 
         <div className="login-hero__content">
+          <div className="login-hero__logos">
+            <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="login-hero__logo" />
+            <span className="login-hero__logo-divider" aria-hidden />
+            <img
+              src="/Flag-Afghanistan.webp"
+              alt="Afghanistan"
+              className="login-hero__logo login-hero__logo--flag"
+            />
+          </div>
           <p className="login-hero__mark">Embassy Panel</p>
           <h1 className="login-hero__brand">
             Salaam

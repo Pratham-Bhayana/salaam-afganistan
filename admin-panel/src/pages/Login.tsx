@@ -2,14 +2,15 @@ import { useState, type FormEvent } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../api/AuthContext';
+import { defaultHomePath } from '../nav/navAccess';
 import { ApiError } from '../api/client';
 import './Login.css';
 
 export function Login() {
-  const { authenticated, login } = useAuth();
+  const { authenticated, login, staff } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = (location.state as { from?: string } | null)?.from || '/applications';
+  const from = (location.state as { from?: string } | null)?.from;
 
   const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || '');
   const [password, setPassword] = useState(import.meta.env.VITE_ADMIN_PASSWORD || '');
@@ -18,7 +19,7 @@ export function Login() {
   const [loading, setLoading] = useState(false);
 
   if (authenticated) {
-    return <Navigate to={from} replace />;
+    return <Navigate to={from || defaultHomePath(staff)} replace />;
   }
 
   async function onSubmit(e: FormEvent) {
@@ -26,8 +27,8 @@ export function Login() {
     setError('');
     setLoading(true);
     try {
-      await login(email.trim(), password);
-      navigate(from, { replace: true });
+      const loggedIn = await login(email.trim(), password);
+      navigate(from || defaultHomePath(loggedIn), { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Login failed');
     } finally {
@@ -43,6 +44,15 @@ export function Login() {
         <div className="login-hero__grid" aria-hidden />
 
         <div className="login-hero__content">
+          <div className="login-hero__logos">
+            <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="login-hero__logo" />
+            <span className="login-hero__logo-divider" aria-hidden />
+            <img
+              src="/raizing-logo.png"
+              alt="Raizing Global"
+              className="login-hero__logo login-hero__logo--raizing"
+            />
+          </div>
           <p className="login-hero__mark">Raizing Global</p>
           <h1 className="login-hero__brand">
             Salaam

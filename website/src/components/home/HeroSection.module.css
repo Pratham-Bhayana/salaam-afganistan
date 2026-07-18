@@ -80,6 +80,38 @@
   border-radius: 12px;
 }
 
+.eligibilityLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  align-self: center;
+  margin-top: 1rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-black);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  cursor: pointer;
+  transition: color 0.15s ease, gap 0.15s ease;
+}
+
+.eligibilityLink:hover {
+  color: var(--color-gray-600);
+  gap: 0.6rem;
+}
+
+.eligibilityLink svg {
+  transition: transform 0.15s ease;
+}
+
+.eligibilityLink:hover svg {
+  transform: translateX(2px);
+}
+
 .slideSide {
   order: 1;
   position: relative;

@@ -7,6 +7,8 @@ export interface NavLink {
 export const NAV_LINKS: NavLink[] = [
   { label: "Home", href: "/" },
   { label: "About Us", href: "/about" },
+  { label: "Raizing Sim", href: "https://www.raizingsim.com/", external: true },
+  { label: "Travel Insurance", href: "https://www.visitorscoverage.com/", external: true },
   { label: "General Information", href: "/general-information" },
   { label: "Contact Us", href: "/contact" },
 ];

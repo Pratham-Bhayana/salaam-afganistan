@@ -13,6 +13,7 @@ import {
   UserRoundSearch,
   Settings,
   ScrollText,
+  Activity,
   type LucideIcon,
 } from 'lucide-react';
 import { Modal } from './Modal';
@@ -38,6 +39,7 @@ const SECTION_ICONS: Record<SectionKey, LucideIcon> = {
   receptionist: UserRoundSearch,
   settings: Settings,
   audit: ScrollText,
+  'embassy-activity': Activity,
 };
 
 const TOTAL_SECTIONS = STAFF_SECTIONS.length;

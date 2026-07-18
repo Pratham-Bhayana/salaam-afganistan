@@ -38,6 +38,7 @@ const formFields = require('./data/formFields');
 const feeRules = require('./data/feeRules');
 const {
   defaultSuperAdmin,
+  defaultReceptionist,
   defaultEmailTemplates,
   defaultVisaTemplate,
 } = require('./data/adminBootstrap');
@@ -89,6 +90,25 @@ async function seedAdminBootstrap() {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
+  const receptionPasswordHash = await Staff.hashPassword(defaultReceptionist.password);
+  const receptionist = await Staff.findOneAndUpdate(
+    { email: defaultReceptionist.email.toLowerCase() },
+    {
+      $set: {
+        firstName: defaultReceptionist.firstName,
+        lastName: defaultReceptionist.lastName,
+        role: defaultReceptionist.role,
+        designation: defaultReceptionist.designation,
+        isActive: true,
+        passwordHash: receptionPasswordHash,
+      },
+      $setOnInsert: {
+        email: defaultReceptionist.email.toLowerCase(),
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
   await PlatformSettings.findOneAndUpdate(
     { key: 'default' },
     {
@@ -120,6 +140,8 @@ async function seedAdminBootstrap() {
   return {
     adminEmail: admin.email,
     adminRole: admin.role,
+    receptionistEmail: receptionist.email,
+    receptionistRole: receptionist.role,
     emailTemplates: emailCount,
   };
 }
@@ -232,10 +254,31 @@ async function seedEmbassyBootstrap() {
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
 
+  const staffEmail = process.env.SEED_EMBASSY_STAFF_EMAIL || 'embassy.staff@salaam.local';
+  const staffPasswordHash = await EmbassyStaff.hashPassword(password);
+  const embassyStaff = await EmbassyStaff.findOneAndUpdate(
+    { email: staffEmail.toLowerCase() },
+    {
+      $set: {
+        embassy: embassy._id,
+        firstName: 'Embassy',
+        lastName: 'Officer',
+        role: EMBASSY_ROLES.EMBASSY_STAFF,
+        accessMode: 'all',
+        isActive: true,
+        passwordHash: staffPasswordHash,
+        createdByEmbassyStaff: embassyAdmin._id,
+      },
+      $setOnInsert: { email: staffEmail.toLowerCase() },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true }
+  );
+
   return {
     embassyCode: embassy.code,
     embassyId: embassy._id,
     embassyAdminEmail: embassyAdmin.email,
+    embassyStaffEmail: embassyStaff.email,
     peerEmbassyCode: kbl.code,
     peerEmbassyAdminEmail: kblAdmin.email,
   };

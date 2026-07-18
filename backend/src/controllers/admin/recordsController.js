@@ -18,6 +18,7 @@ const lookup = asyncHandler(async (req, res) => {
       { referenceId: rx },
       { 'personal.fullName': rx },
       { 'personal.email': rx },
+      { 'personal.phone': rx },
       { 'passport.passportNumber': rx },
     ],
   })

@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut } from 'lucide-react';
 import { embassyNav } from '../nav/embassyNav';
 import { useAuth } from '../api/AuthContext';
+import { embassyHasPermission } from '../api/client';
 import { fetchChatUnread } from '../api/chat';
 import './Sidebar.css';
 
@@ -57,19 +58,21 @@ export function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="sidebar__brand">
-        <div className="sidebar__mark" aria-hidden>
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="sidebar__brand-text">
-          <strong>Salaam</strong>
-          <span>Embassy · {embassy?.code || 'DXB'}</span>
+        <div className="sidebar__logos">
+          <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="sidebar__logo" />
+          <span className="sidebar__logo-divider" aria-hidden />
+          <img
+            src="/Flag-Afghanistan.webp"
+            alt="Afghanistan"
+            className="sidebar__logo sidebar__logo--flag"
+          />
         </div>
       </div>
 
       <nav className="sidebar__nav" aria-label="Embassy navigation">
-        {embassyNav.map((item) => {
+        {embassyNav
+          .filter((item) => !item.permission || embassyHasPermission(staff, item.permission))
+          .map((item) => {
           const Icon = item.icon;
           const badge =
             item.id === 'chat' && chatUnread > 0

@@ -119,12 +119,23 @@ export function Header() {
             const active = pathname === link.href;
             return (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
-                >
-                  {link.label}
-                </Link>
+                {link.external ? (
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.navLink}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link
+                    href={link.href}
+                    className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
+                  >
+                    {link.label}
+                  </Link>
+                )}
               </li>
             );
           })}
@@ -175,9 +186,20 @@ export function Header() {
           <ul className={styles.offcanvasNav}>
             {NAV_LINKS.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className={styles.offcanvasLink}>
-                  {link.label}
-                </Link>
+                {link.external ? (
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={styles.offcanvasLink}
+                  >
+                    {link.label}
+                  </a>
+                ) : (
+                  <Link href={link.href} className={styles.offcanvasLink}>
+                    {link.label}
+                  </Link>
+                )}
               </li>
             ))}
             {!loading && user ? (

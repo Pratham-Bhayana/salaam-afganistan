@@ -61,6 +61,7 @@ export type ApplicationListItem = {
   };
   embassy?: { _id: string; name?: string; code?: string } | string | null;
   paymentStatus?: string;
+  source?: string;
   submittedAt?: string;
   createdAt?: string;
   assignedCaseManager?: {
@@ -150,6 +151,12 @@ export async function requestDocuments(
   return apiFetch<ApplicationDetail>(`/applications/${id}/documents/request`, {
     method: 'POST',
     body: JSON.stringify(body),
+  });
+}
+
+export async function deleteApplication(id: string) {
+  return apiFetch<{ deleted: boolean; referenceId?: string }>(`/applications/${id}`, {
+    method: 'DELETE',
   });
 }
 

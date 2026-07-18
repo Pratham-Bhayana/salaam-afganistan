@@ -12,6 +12,7 @@ import {
   Users,
   Settings,
   ScrollText,
+  Activity,
 } from 'lucide-react';
 
 export type AdminNavItem = {
@@ -32,8 +33,15 @@ export const adminNav: AdminNavItem[] = [
   { id: 'chat', label: 'Chat', path: '/chat', icon: MessagesSquare, enabled: true },
   { id: 'fees', label: 'Fees & Content', path: '/fees-content', icon: Tags, enabled: false },
   { id: 'templates', label: 'Visa Templates', path: '/visa-templates', icon: LayoutTemplate, enabled: true },
-  { id: 'receptionist', label: 'Receptionist', path: '/receptionist', icon: UserRoundSearch, enabled: false },
+  { id: 'receptionist', label: 'Receptionist', path: '/receptionist', icon: UserRoundSearch, enabled: true },
   { id: 'staff', label: 'Staff', path: '/staff', icon: Users, enabled: true },
   { id: 'settings', label: 'Settings', path: '/settings', icon: Settings, enabled: true },
   { id: 'audit', label: 'Audit Logs', path: '/audit-logs', icon: ScrollText, enabled: true },
+  {
+    id: 'embassy-activity',
+    label: 'Embassy Activity',
+    path: '/embassy-activity',
+    icon: Activity,
+    enabled: true,
+  },
 ];

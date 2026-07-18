@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Building2,
   ChartLine,
@@ -6,6 +8,7 @@ import {
 } from "lucide-react";
 import { COUNTRY_INFO_CARDS, COUNTRY_STATS } from "@/data/home";
 import type { InfoCardItem } from "@/types/home";
+import { Reveal, RevealItem } from "@/components/ui/Reveal";
 import styles from "./OpportunitiesSection.module.css";
 
 function CardIcon({ icon }: { icon: InfoCardItem["icon"] }) {
@@ -21,42 +24,44 @@ export function OpportunitiesSection() {
       <div className="divider-sm" />
       <div className="container">
         <div className={styles.headingWrap}>
-          <div className="section-heading" style={{ alignItems: "center", textAlign: "center" }}>
+          <Reveal preset="up" className="section-heading" style={{ alignItems: "center", textAlign: "center" }}>
             <span className="sub-title">Discover Afghanistan</span>
             <h2>Industries, Economy & Culture</h2>
             <p style={{ margin: "0.75rem auto 0", maxWidth: "38rem", color: "var(--color-gray-600)" }}>
               Key industries, economic highlights, and culture that define Afghanistan today.
             </p>
-          </div>
+          </Reveal>
         </div>
 
-        <div className={styles.cards}>
+        <Reveal preset="fade" stagger={0.15} className={styles.cards}>
           {COUNTRY_INFO_CARDS.map((card) => (
-            <article key={card.id} className={styles.card}>
-              <div className={styles.iconCircle}>
-                <CardIcon icon={card.icon} />
-              </div>
-              <h3>{card.title}</h3>
-              <ul>
-                {card.items.map((item) => (
-                  <li key={item}>
-                    <Check size={16} aria-hidden />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </article>
+            <RevealItem as="div" preset="blur" key={card.id}>
+              <article className={styles.card}>
+                <div className={styles.iconCircle}>
+                  <CardIcon icon={card.icon} />
+                </div>
+                <h3>{card.title}</h3>
+                <ul>
+                  {card.items.map((item) => (
+                    <li key={item}>
+                      <Check size={16} aria-hidden />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </RevealItem>
           ))}
-        </div>
+        </Reveal>
 
-        <div className={styles.statsBar}>
+        <Reveal preset="skew" stagger={0.12} className={styles.statsBar}>
           {COUNTRY_STATS.map((stat) => (
-            <div key={stat.label} className={styles.statItem}>
+            <RevealItem as="div" preset="up" key={stat.label} className={styles.statItem}>
               <strong>{stat.value}</strong>
               <span>{stat.label}</span>
-            </div>
+            </RevealItem>
           ))}
-        </div>
+        </Reveal>
       </div>
       <div className="divider-sm" />
     </section>

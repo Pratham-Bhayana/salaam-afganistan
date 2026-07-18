@@ -2,7 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
-import { listApplications, type ApplicationListItem } from '../api/applications';
+import { ConfirmDialog } from '../components/ConfirmDialog';
+import {
+  deleteApplication,
+  listApplications,
+  type ApplicationListItem,
+} from '../api/applications';
 import { ApiError } from '../api/client';
 import './Applications.css';
 
@@ -19,6 +24,8 @@ export function Applications() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<ApplicationListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -90,6 +97,7 @@ export function Applications() {
       <DataTable
         rows={rows}
         onViewRow={(id) => navigate(`/applications/${id}`)}
+        onDeleteRow={(row) => setDeleteTarget(row)}
         page={page}
         pageSize={pageSize}
         totalItems={total}
@@ -97,6 +105,36 @@ export function Applications() {
         onPageSizeChange={(size) => {
           setPageSize(size);
           setPage(1);
+        }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete application"
+        message={
+          <>
+            You are about to permanently delete{' '}
+            <strong>{deleteTarget?.referenceId}</strong>
+            {deleteTarget?.personal?.fullName ? ` (${deleteTarget.personal.fullName})` : ''} along
+            with all its documents, chats, and issued visa. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return;
+          setDeleting(true);
+          try {
+            await deleteApplication(deleteTarget._id);
+            setDeleteTarget(null);
+            await load();
+          } catch (err) {
+            setError(err instanceof ApiError ? err.message : 'Delete failed');
+            setDeleteTarget(null);
+          } finally {
+            setDeleting(false);
+          }
         }}
       />
     </div>

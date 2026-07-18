@@ -2,6 +2,7 @@ const { body } = require('express-validator');
 const embassyAuthService = require('../../services/embassyAuthService');
 const { asyncHandler, success } = require('../../middleware/error');
 const { getEmbassyPermissionsForRole } = require('../../config/embassyPermissions');
+const { getClientIp } = require('../../utils/helpers');
 
 const loginValidators = [
   body('email').isEmail().withMessage('Valid email required'),
@@ -12,7 +13,7 @@ const login = asyncHandler(async (req, res) => {
   const session = await embassyAuthService.login({
     email: req.body.email,
     password: req.body.password,
-    meta: { ip: req.ip, userAgent: req.get('user-agent') },
+    meta: { ip: getClientIp(req), userAgent: req.get('user-agent') },
   });
   return success(res, session);
 });
@@ -20,7 +21,7 @@ const login = asyncHandler(async (req, res) => {
 const refresh = asyncHandler(async (req, res) => {
   const session = await embassyAuthService.refresh({
     refreshToken: req.body.refreshToken,
-    meta: { ip: req.ip, userAgent: req.get('user-agent') },
+    meta: { ip: getClientIp(req), userAgent: req.get('user-agent') },
   });
   return success(res, session);
 });

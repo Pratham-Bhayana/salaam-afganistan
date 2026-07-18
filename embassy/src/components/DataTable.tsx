@@ -1,4 +1,4 @@
-import { Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 import type { ApplicationListItem } from '../api/applications';
 import { formatDate, staffLabel } from '../api/applications';
 import { StatusPill } from './StatusPill';
@@ -7,6 +7,7 @@ import './DataTable.css';
 type Props = {
   rows: ApplicationListItem[];
   onViewRow?: (id: string) => void;
+  onDeleteRow?: (row: ApplicationListItem) => void;
   page: number;
   pageSize: number;
   totalItems: number;
@@ -17,6 +18,7 @@ type Props = {
 export function DataTable({
   rows,
   onViewRow,
+  onDeleteRow,
   page,
   pageSize,
   totalItems,
@@ -69,6 +71,16 @@ export function DataTable({
                     >
                       <Eye size={18} strokeWidth={1.75} />
                     </button>
+                    {onDeleteRow ? (
+                      <button
+                        type="button"
+                        className="data-table__view data-table__delete"
+                        aria-label={`Delete ${row.personal?.fullName || row.referenceId}`}
+                        onClick={() => onDeleteRow(row)}
+                      >
+                        <Trash2 size={18} strokeWidth={1.75} />
+                      </button>
+                    ) : null}
                   </td>
                 </tr>
               ))

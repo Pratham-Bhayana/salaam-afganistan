@@ -85,6 +85,11 @@
   background: var(--purple-soft);
 }
 
+.data-table__delete:hover {
+  color: #d64545;
+  background: rgba(214, 69, 69, 0.1);
+}
+
 .data-table__footer {
   display: flex;
   align-items: center;

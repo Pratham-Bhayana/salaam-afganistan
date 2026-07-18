@@ -157,7 +157,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
     channel: "embassy",
     shortDescription: "Embassy • Single entry • ~1 month stay",
     documentLabels: [
-      "Visa application form",
       "Passport (≥6 mo. + blank pages)",
       "2 passport photos",
       "Invitation letter",
@@ -181,15 +180,14 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Fees vary by mission & nationality — Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
-      { key: "invitation", label: "Invitation letter from sponsor / tour company", required: "required" },
+      { key: "invitation", label: "Invitation letter from sponsor / tour company", required: "optional" },
       { key: "flights", label: "Flight bookings", required: "required" },
       { key: "hotel", label: "Hotel / accommodation", required: "required" },
       { key: "insurance", label: "Travel insurance", required: "required" },
       { key: "bank", label: "Bank statement", required: "required" },
-      { key: "itinerary", label: "Itinerary / places to visit", required: "required" },
+      { key: "itinerary", label: "Itinerary / places to visit", required: "optional" },
       { key: "tour_license", label: "Tour operator license copy", required: "optional" },
       { key: "local_id", label: "Local ID / residence proof", required: "conditional" },
     ],
@@ -221,7 +219,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
       { key: "host_letter", label: "Introduction letter from host in Afghanistan", required: "required" },
@@ -264,7 +261,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
       { key: "company_letter", label: "Employer / company introduction letter", required: "required" },
@@ -309,7 +305,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
       { key: "employer_invitation", label: "Invitation from Afghan employer", required: "required" },
@@ -350,7 +345,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
       { key: "onward_ticket", label: "Onward travel ticket to final destination", required: "required" },
@@ -400,7 +394,6 @@ export const VISA_TYPES: VisaTypeOption[] = [
       disclaimer: "Admin configured.",
     },
     documents: [
-      { key: "application_form", label: "Visa application form", required: "required" },
       { key: "passport", label: "Passport (≥6 mo. + blank pages)", required: "required" },
       { key: "photos", label: "2 passport photos (white bg)", required: "required" },
       { key: "agency_letter", label: "Introduction letter from news agency", required: "required" },

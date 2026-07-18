@@ -112,6 +112,11 @@ router.get(
   requireEmbassyPermission(EMBASSY_PERMISSIONS.DOCUMENTS_VIEW),
   applicationController.viewDocument
 );
+router.delete(
+  '/applications/:id',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.APPLICATIONS_DECIDE),
+  applicationController.remove
+);
 
 // ─── Records — embassy decisions only ─────────────────────────────────────────
 router.get(
@@ -207,6 +212,11 @@ router.post(
   staffController.create
 );
 router.patch('/staff/:id', requireEmbassyPermission(EMBASSY_PERMISSIONS.STAFF_MANAGE), staffController.update);
+router.patch(
+  '/staff/:id/permissions',
+  requireEmbassyPermission(EMBASSY_PERMISSIONS.STAFF_MANAGE),
+  staffController.updatePermissions
+);
 router.delete('/staff/:id', requireEmbassyPermission(EMBASSY_PERMISSIONS.STAFF_MANAGE), staffController.remove);
 
 module.exports = router;

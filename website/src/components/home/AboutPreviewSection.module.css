@@ -38,26 +38,6 @@
   object-position: center;
 }
 
-.logoText {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.15;
-}
-
-.logoText strong {
-  font-size: 1.05rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--color-black);
-}
-
-.logoText span {
-  font-size: 0.75rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-gray-600);
-}
-
 .imageWrap {
   position: relative;
   display: inline-block;

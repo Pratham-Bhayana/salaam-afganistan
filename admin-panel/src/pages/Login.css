@@ -67,6 +67,36 @@
   padding-top: clamp(24px, 8vh, 80px);
 }
 
+.login-hero__logos {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 28px;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
+  animation: loginRise 0.8s 0.05s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.login-hero__logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
+.login-hero__logo--raizing {
+  height: 32px;
+  max-width: 120px;
+}
+
+.login-hero__logo-divider {
+  width: 1px;
+  height: 34px;
+  background: rgba(0, 0, 0, 0.12);
+  flex-shrink: 0;
+}
+
 .login-hero__mark {
   margin: 0 0 28px;
   font-size: 12px;
@@ -387,6 +417,7 @@
 @media (prefers-reduced-motion: reduce) {
   .login-hero,
   .login-panel,
+  .login-hero__logos,
   .login-hero__mark,
   .login-hero__brand,
   .login-hero__tagline,

@@ -1,4 +1,5 @@
 const EmbassyActivityLog = require('../models/EmbassyActivityLog');
+const { getClientIp } = require('../utils/helpers');
 
 async function logEmbassyActivity({
   embassy,
@@ -33,7 +34,7 @@ function activityFromReq(req, payload) {
     ...payload,
     embassy: req.embassyId,
     embassyStaff: req.embassyStaff._id,
-    ip: req.ip,
+    ip: getClientIp(req),
     userAgent: req.get('user-agent'),
   });
 }

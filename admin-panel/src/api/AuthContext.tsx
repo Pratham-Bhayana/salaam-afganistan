@@ -17,7 +17,7 @@ import {
 type AuthContextValue = {
   staff: StaffSession | null;
   authenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<StaffSession>;
   logout: () => void;
 };
 
@@ -31,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const next = await loginAdmin(email, password);
     setStaff(next);
     setAuthenticated(true);
+    return next;
   }, []);
 
   const logout = useCallback(() => {

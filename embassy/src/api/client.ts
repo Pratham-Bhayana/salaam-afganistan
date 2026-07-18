@@ -36,12 +36,83 @@ export class ApiError extends Error {
   }
 }
 
+const CLIENT_IP_KEY = 'salaam_embassy_client_ip';
+let cachedClientIp = ((): string => {
+  try {
+    return localStorage.getItem(CLIENT_IP_KEY) || '';
+  } catch {
+    return '';
+  }
+})();
+
+/**
+ * Detect the machine's public IP so activity logs show a real address instead
+ * of the server's loopback (::1) in local/proxied setups. This needs no browser
+ * permission — the public IP is fetched directly from a lightweight service.
+ * Result is cached in-memory + localStorage and sent via the `X-Client-IP`
+ * header (the backend only trusts it when it otherwise sees a private IP).
+ */
+export async function detectClientIp(): Promise<string> {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+    if (!res.ok) return cachedClientIp;
+    const json = (await res.json()) as { ip?: string };
+    if (json?.ip) {
+      cachedClientIp = json.ip;
+      try {
+        localStorage.setItem(CLIENT_IP_KEY, json.ip);
+      } catch {
+        /* ignore storage errors */
+      }
+    }
+  } catch {
+    /* offline / blocked — fall back to whatever the server sees */
+  }
+  return cachedClientIp;
+}
+
+export function getCachedClientIp(): string {
+  return cachedClientIp;
+}
+
+// Kick off detection once at startup (browser only).
+if (typeof window !== 'undefined') {
+  void detectClientIp();
+}
+
+function withClientIp(headers: Headers): Headers {
+  if (cachedClientIp) headers.set('X-Client-IP', cachedClientIp);
+  return headers;
+}
+
 function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY);
 }
 
 function getRefreshToken() {
   return localStorage.getItem(REFRESH_KEY);
+}
+
+export const EMBASSY_PERMISSIONS = {
+  APPLICATIONS_READ: 'embassy.applications:read',
+  APPLICATIONS_DECIDE: 'embassy.applications:decide',
+  APPLICATIONS_ASSIGN: 'embassy.applications:assign',
+  CHAT_ACCESS: 'embassy.chat:access',
+  REPORTS_READ: 'embassy.reports:read',
+  STAFF_MANAGE: 'embassy.staff:manage',
+  ACTIVITY_READ: 'embassy.activity:read',
+  DOCUMENTS_VIEW: 'embassy.documents:view',
+} as const;
+
+/** embassy_admin gets everything; otherwise check the permissions array. */
+export function embassyHasPermission(
+  staff: EmbassyStaffSession | null | undefined,
+  permission: string
+): boolean {
+  if (!staff) return false;
+  if (staff.role === 'embassy_admin') return true;
+  const perms = staff.permissions || [];
+  return perms.includes('*') || perms.includes(permission);
 }
 
 export function getStoredStaff(): EmbassyStaffSession | null {
@@ -95,7 +166,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
   const res = await fetch(`${EMBASSY_PREFIX}/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withClientIp(new Headers({ 'Content-Type': 'application/json' })),
     body: JSON.stringify({ refreshToken }),
   });
 
@@ -140,6 +211,7 @@ export async function apiFetch<T>(
 
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  withClientIp(headers);
 
   const res = await fetch(`${EMBASSY_PREFIX}${path}`, { ...options, headers });
 
@@ -170,9 +242,13 @@ export async function apiFetch<T>(
 }
 
 export async function loginEmbassy(email: string, password: string) {
+  // Make sure we have the public IP before the login so the sign-in activity
+  // record shows a real address (best-effort — never blocks login on failure).
+  if (!cachedClientIp) await detectClientIp();
+
   const res = await fetch(`${EMBASSY_PREFIX}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withClientIp(new Headers({ 'Content-Type': 'application/json' })),
     body: JSON.stringify({ email, password }),
   });
 

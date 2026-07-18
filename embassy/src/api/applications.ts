@@ -136,6 +136,12 @@ export async function getApplication(id: string) {
   return apiFetch<ApplicationDetail>(`/applications/${id}`);
 }
 
+export async function deleteApplication(id: string) {
+  return apiFetch<{ deleted: boolean; referenceId?: string }>(`/applications/${id}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function decideApplication(
   id: string,
   body: { toStatus: DecideStatus; note?: string; meta?: Record<string, unknown> }

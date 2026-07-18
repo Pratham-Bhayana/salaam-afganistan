@@ -1,5 +1,5 @@
 import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
-import type { OverviewStat } from '../data/mockDashboard';
+import type { OverviewStat } from '../api/dashboard';
 import './StatCard.css';
 
 type Props = {

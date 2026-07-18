@@ -18,6 +18,8 @@ const settingsController = require('../../controllers/admin/settingsController')
 const documentController = require('../../controllers/admin/documentController');
 const issuedVisaController = require('../../controllers/admin/issuedVisaController');
 const recordsController = require('../../controllers/admin/recordsController');
+const dashboardController = require('../../controllers/admin/dashboardController');
+const embassyActivityController = require('../../controllers/admin/embassyActivityController');
 const {
   visaTypes,
   eligibilityRules,
@@ -67,6 +69,13 @@ router.use(authenticateStaff);
 router.post('/auth/logout', authController.logout);
 router.get('/auth/me', authController.me);
 
+// ─── Dashboard ───────────────────────────────────────────────────────────────
+router.get(
+  '/dashboard',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_READ, PERMISSIONS.FINANCE_READ),
+  dashboardController.dashboard
+);
+
 // ─── Staff / RBAC (8.6) ──────────────────────────────────────────────────────
 router.get('/staff', requirePermission(PERMISSIONS.STAFF_MANAGE), staffController.list);
 router.get('/staff/:id', requirePermission(PERMISSIONS.STAFF_MANAGE), staffController.getById);
@@ -105,7 +114,7 @@ router.post(
 );
 router.patch(
   '/applications/:id',
-  requirePermission(PERMISSIONS.APPLICATIONS_WRITE),
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
   applicationController.update
 );
 router.post(
@@ -114,6 +123,11 @@ router.post(
   body('toStatus').notEmpty(),
   validate,
   applicationController.changeStatus
+);
+router.delete(
+  '/applications/:id',
+  requirePermission(PERMISSIONS.APPLICATIONS_WRITE),
+  applicationController.remove
 );
 router.post(
   '/applications/:id/notes',
@@ -131,7 +145,7 @@ router.get(
 );
 router.post(
   '/applications/:id/documents/deliver',
-  requirePermission(PERMISSIONS.DOCUMENTS_DELIVER),
+  requireAnyPermission(PERMISSIONS.DOCUMENTS_DELIVER, PERMISSIONS.APPLICATIONS_INTAKE),
   uploadDeliveryDoc.single('file'),
   documentController.deliverDocument
 );
@@ -178,7 +192,7 @@ router.get(
 router.get('/finance/payments', requirePermission(PERMISSIONS.FINANCE_READ), financeController.listPayments);
 router.post(
   '/finance/payments',
-  requirePermission(PERMISSIONS.FINANCE_WRITE),
+  requireAnyPermission(PERMISSIONS.FINANCE_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
   body('applicationId').notEmpty(),
   body('amount').isFloat({ gt: 0 }),
   validate,
@@ -274,5 +288,9 @@ router.put('/visa-templates', requirePermission(PERMISSIONS.TEMPLATES_MANAGE), i
 router.get('/settings', requirePermission(PERMISSIONS.SETTINGS_MANAGE), settingsController.getSettings);
 router.patch('/settings', requirePermission(PERMISSIONS.SETTINGS_MANAGE), settingsController.updateSettings);
 router.get('/audit-logs', requirePermission(PERMISSIONS.AUDIT_READ), settingsController.listAuditLogs);
+
+// ─── Embassy activity (9.5 — admin view of embassy-panel actions) ─────────────
+router.get('/embassy-activity', requirePermission(PERMISSIONS.AUDIT_READ), embassyActivityController.list);
+router.get('/embassy-activity/embassies', requirePermission(PERMISSIONS.AUDIT_READ), embassyActivityController.embassyOptions);
 
 module.exports = router;

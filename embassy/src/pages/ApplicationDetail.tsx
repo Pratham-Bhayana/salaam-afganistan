@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   Building2,
   CheckCircle2,
@@ -10,11 +10,13 @@ import {
   Send,
   Shield,
   Stamp,
+  Trash2,
   UserRound,
 } from 'lucide-react';
 import {
   addApplicationNote,
   decideApplication,
+  deleteApplication,
   formatDate,
   getApplication,
   getVisaDraft,
@@ -31,6 +33,7 @@ import { ApiError } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import './ApplicationDetail.css';
 
 const POLL_MS = 5000;
@@ -87,7 +90,10 @@ function draftFromApp(app: ApplicationDetailType): VisaDraftFields {
 
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { embassy } = useAuth();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const missionLabel =
     embassy?.code && embassy?.name
       ? `${embassy.name} (${embassy.code})`
@@ -466,8 +472,46 @@ export function ApplicationDetail() {
             <MessagesSquare size={16} />
             Open chat
           </Link>
+
+          <button
+            type="button"
+            className="app-detail__btn app-detail__btn--delete"
+            aria-label="Delete application"
+            title="Delete application"
+            onClick={() => setDeleteOpen(true)}
+            disabled={actionLoading}
+          >
+            <Trash2 size={16} />
+            Delete
+          </button>
         </div>
       </header>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        title="Delete application"
+        message={
+          <>
+            You are about to permanently delete <strong>{current.referenceId}</strong> along with
+            all its documents, chats, and issued visa. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={deleting}
+        onCancel={() => setDeleteOpen(false)}
+        onConfirm={async () => {
+          setDeleting(true);
+          try {
+            await deleteApplication(current._id);
+            navigate('/applications', { replace: true });
+          } catch (err) {
+            setActionError(err instanceof ApiError ? err.message : 'Delete failed');
+            setDeleteOpen(false);
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
 
       <div className="app-detail__body">
         {actionError ? (

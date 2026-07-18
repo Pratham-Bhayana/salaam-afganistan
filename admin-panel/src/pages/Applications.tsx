@@ -2,17 +2,24 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
+import { ConfirmDialog } from '../components/ConfirmDialog';
 import {
+  deleteApplication,
   listApplications,
   type ApplicationListItem,
 } from '../api/applications';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import './Applications.css';
 
 const POLL_MS = 8000;
 
 export function Applications() {
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canDelete = staffHasPermission(staff, 'applications:write');
+  const [deleteTarget, setDeleteTarget] = useState<ApplicationListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [year, setYear] = useState('2026');
   const [month, setMonth] = useState('July');
   const [search, setSearch] = useState('');
@@ -81,6 +88,21 @@ export function Applications() {
     });
   }
 
+  async function onConfirmDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await deleteApplication(deleteTarget._id);
+      setDeleteTarget(null);
+      await load();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Delete failed');
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <div className="applications">
       <PageHeader
@@ -103,6 +125,7 @@ export function Applications() {
         onToggleRow={toggleRow}
         onToggleAll={toggleAll}
         onViewRow={(id) => navigate(`/applications/${id}`)}
+        onDeleteRow={canDelete ? (row) => setDeleteTarget(row) : undefined}
         page={page}
         pageSize={pageSize}
         totalItems={total}
@@ -111,6 +134,23 @@ export function Applications() {
           setPageSize(size);
           setPage(1);
         }}
+      />
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="Delete application"
+        message={
+          <>
+            You are about to permanently delete{' '}
+            <strong>{deleteTarget?.referenceId}</strong>
+            {deleteTarget?.personal?.fullName ? ` (${deleteTarget.personal.fullName})` : ''} along
+            with all its documents, payments, chats, and issued visa. This cannot be undone.
+          </>
+        }
+        confirmLabel="Delete permanently"
+        busy={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => void onConfirmDelete()}
       />
     </div>
   );

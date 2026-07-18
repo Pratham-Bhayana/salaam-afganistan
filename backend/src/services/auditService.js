@@ -1,4 +1,5 @@
 const AuditLog = require('../models/AuditLog');
+const { getClientIp } = require('../utils/helpers');
 
 async function writeAudit({
   action,
@@ -42,7 +43,7 @@ function auditFromReq(req, payload) {
     actorId: req.staff?._id,
     actorEmail: req.staff?.email,
     actorRole: req.staff?.role,
-    ip: req.ip,
+    ip: getClientIp(req),
     userAgent: req.get('user-agent'),
   });
 }

@@ -14,19 +14,15 @@ export function AboutPreviewSection() {
           <div className={styles.visualCol}>
             <div className={styles.logoWrap}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo.png" alt="Salaam Afghanistan logo" className={styles.logo} />
-              <div className={styles.logoText}>
-                <strong>Salaam Afghanistan</strong>
-                <span>Rise to Excellence</span>
-              </div>
+              <img src="/raizing-logo.png" alt="Raizing Global logo" className={styles.logo} />
             </div>
 
             <div className={styles.imageWrap}>
               <span className={`${styles.sparkle} ${styles.sparkleDark}`} aria-hidden />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"
-                alt="Salaam Afghanistan and Raizing Global"
+                src="/office.jpg"
+                alt="Salaam Afghanistan office"
                 className={styles.building}
               />
               <span className={`${styles.sparkle} ${styles.sparkleLight}`} aria-hidden />

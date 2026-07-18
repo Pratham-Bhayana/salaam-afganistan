@@ -232,12 +232,29 @@ const viewDocument = asyncHandler(async (req, res) => {
   return fs.createReadStream(absolute).pipe(res);
 });
 
+const remove = asyncHandler(async (req, res) => {
+  const application = await assertEmbassyApplicationAccess(req, req.params.id);
+
+  const { deleteApplicationCascade } = require('../../services/applicationDeletionService');
+  const snapshot = await deleteApplicationCascade(application._id);
+
+  await activityFromReq(req, {
+    action: 'application.delete',
+    resourceType: 'Application',
+    resourceId: application._id,
+    meta: { referenceId: snapshot?.referenceId },
+  });
+
+  return success(res, { deleted: true, referenceId: snapshot?.referenceId });
+});
+
 module.exports = {
   list,
   getById,
   decide,
   assign,
   addNote,
+  remove,
   viewDocument,
   visaDraft,
   previewVisa,

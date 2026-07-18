@@ -8,6 +8,15 @@ const defaultSuperAdmin = {
   role: ROLES.SUPER_ADMIN,
 };
 
+const defaultReceptionist = {
+  firstName: 'Front',
+  lastName: 'Desk',
+  email: process.env.SEED_RECEPTIONIST_EMAIL || 'reception@salaam.local',
+  password: process.env.SEED_RECEPTIONIST_PASSWORD || 'ChangeMeNow!123',
+  role: ROLES.RECEPTIONIST,
+  designation: 'Reception',
+};
+
 const defaultEmailTemplates = [
   {
     code: 'application_status_change',
@@ -49,6 +58,7 @@ const defaultVisaTemplate = defaultEvisaTemplateSeed;
 
 module.exports = {
   defaultSuperAdmin,
+  defaultReceptionist,
   defaultEmailTemplates,
   defaultVisaTemplate,
 };

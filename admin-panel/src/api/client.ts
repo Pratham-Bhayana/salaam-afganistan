@@ -1,5 +1,5 @@
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
-const ADMIN_PREFIX = `${API_BASE}/api/v1/admin`;
+export const ADMIN_PREFIX = `${API_BASE}/api/v1/admin`;
 
 const ACCESS_KEY = 'salaam_admin_access';
 const REFRESH_KEY = 'salaam_admin_refresh';
@@ -34,7 +34,49 @@ type ApiFailure = {
   details?: unknown;
 };
 
-function getAccessToken() {
+const CLIENT_IP_KEY = 'salaam_admin_client_ip';
+let cachedClientIp = ((): string => {
+  try {
+    return localStorage.getItem(CLIENT_IP_KEY) || '';
+  } catch {
+    return '';
+  }
+})();
+
+/**
+ * Detect the machine's public IP so audit logs show a real address instead of
+ * the server's loopback in local/proxied setups. No browser permission needed —
+ * sent via `X-Client-IP` (backend only trusts it when it sees a private IP).
+ */
+export async function detectClientIp(): Promise<string> {
+  try {
+    const res = await fetch('https://api.ipify.org?format=json', { cache: 'no-store' });
+    if (!res.ok) return cachedClientIp;
+    const json = (await res.json()) as { ip?: string };
+    if (json?.ip) {
+      cachedClientIp = json.ip;
+      try {
+        localStorage.setItem(CLIENT_IP_KEY, json.ip);
+      } catch {
+        /* ignore */
+      }
+    }
+  } catch {
+    /* offline / blocked */
+  }
+  return cachedClientIp;
+}
+
+function withClientIp(headers: Headers): Headers {
+  if (cachedClientIp) headers.set('X-Client-IP', cachedClientIp);
+  return headers;
+}
+
+if (typeof window !== 'undefined') {
+  void detectClientIp();
+}
+
+export function getAccessToken() {
   return localStorage.getItem(ACCESS_KEY);
 }
 
@@ -78,7 +120,7 @@ async function refreshAccessToken(): Promise<boolean> {
 
   const res = await fetch(`${ADMIN_PREFIX}/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withClientIp(new Headers({ 'Content-Type': 'application/json' })),
     body: JSON.stringify({ refreshToken }),
   });
 
@@ -127,6 +169,7 @@ export async function apiFetch<T>(
 
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  withClientIp(headers);
 
   const res = await fetch(`${ADMIN_PREFIX}${path}`, { ...options, headers });
 
@@ -163,6 +206,7 @@ export async function apiFetchBlob(
 
   const token = getAccessToken();
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  withClientIp(headers);
 
   const res = await fetch(`${ADMIN_PREFIX}${path}`, { ...options, headers });
 
@@ -182,9 +226,11 @@ export async function apiFetchBlob(
 }
 
 export async function loginAdmin(email: string, password: string) {
+  if (!cachedClientIp) await detectClientIp();
+
   const res = await fetch(`${ADMIN_PREFIX}/auth/login`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: withClientIp(new Headers({ 'Content-Type': 'application/json' })),
     body: JSON.stringify({ email, password }),
   });
 
