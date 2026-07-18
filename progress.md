@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 18 July 2026 (admin + embassy panels now show both footer brand logos — Salaam Afghanistan + Raizing Global)  
+**Last updated:** 18 July 2026 (website prepped for Vercel deploy — clean production build, env template, fixed 2 blocking TS errors)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
@@ -133,6 +133,7 @@ Admin: `admin@salaam.local` / `ChangeMeNow!123`
 
 | Date | Update |
 |------|--------|
+| 18 Jul 2026 | Website ready for Vercel: `next build` passes clean; fixed 2 build-blocking TS errors (`ProfileView` applicationId→referenceId, `VisaStatusBanner` null-narrowing); set `outputFileTracingRoot` (silences multi-lockfile root warning); `.gitignore` now tracks `.env.example`. Homepage: added Our Story office/logo imgs + eVisa eligibility popup under hero CTA |
 | 18 Jul 2026 | Embassy panel brand pairs Salaam Afghanistan logo with the Afghanistan flag (`/Flag-Afghanistan.webp`) instead of the Raizing logo (sidebar + login); admin keeps Salaam + Raizing |
 | 18 Jul 2026 | Admin + embassy panels now render both website-footer brand logos (`/salaam-logo.png` + `/raizing-logo.png`) in a white logo box on the sidebar brand and login hero (replacing the CSS gradient mark tile); copied assets into both `public/` dirs |
 | 18 Jul 2026 | Activity/audit logs now show the real client IP: backend `getClientIp()` (X-Forwarded-For/req.ip, normalized, trusts `X-Client-IP` only when server sees a private IP); panels detect public IP via ipify and send it; IP + device/browser shown in detail modals |

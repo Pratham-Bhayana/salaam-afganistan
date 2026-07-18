@@ -65,10 +65,11 @@ export function VisaStatusBanner({ variant = "home" }: { variant?: "home" | "pro
 
   useEffect(() => {
     if (!enabled || !app) return;
+    const current = app;
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
-        if (app._id && app.status) {
-          sessionStorage.setItem(dismissKey(app._id, app.status), "1");
+        if (current._id && current.status) {
+          sessionStorage.setItem(dismissKey(current._id, current.status), "1");
         }
         setDismissed(true);
       }

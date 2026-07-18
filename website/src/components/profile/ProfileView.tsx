@@ -228,7 +228,7 @@ export function ProfileView() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${rawApp?.issuedVisa?.visaNumber || app?.applicationId || "visa"}.pdf`;
+      a.download = `${rawApp?.issuedVisa?.visaNumber || app?.referenceId || "visa"}.pdf`;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
