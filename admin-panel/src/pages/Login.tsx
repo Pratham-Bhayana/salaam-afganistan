@@ -12,8 +12,8 @@ export function Login() {
   const location = useLocation();
   const from = (location.state as { from?: string } | null)?.from;
 
-  const [email, setEmail] = useState(import.meta.env.VITE_ADMIN_EMAIL || '');
-  const [password, setPassword] = useState(import.meta.env.VITE_ADMIN_PASSWORD || '');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -106,7 +106,7 @@ export function Login() {
               <input
                 type="email"
                 autoComplete="username"
-                placeholder="you@salaam.local"
+                placeholder="Enter email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -119,7 +119,7 @@ export function Login() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
-                  placeholder="Enter your password"
+                  placeholder="Enter password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
