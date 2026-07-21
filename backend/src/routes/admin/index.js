@@ -117,6 +117,21 @@ router.patch(
   requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
   applicationController.update
 );
+router.patch(
+  '/applications/:id/applicant',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updateApplicant
+);
+router.patch(
+  '/applications/:id/passport',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updatePassport
+);
+router.patch(
+  '/applications/:id/travel',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updateTravel
+);
 router.post(
   '/applications/:id/status',
   requireAnyPermission(PERMISSIONS.APPLICATIONS_STATUS, PERMISSIONS.APPLICATIONS_INTAKE),

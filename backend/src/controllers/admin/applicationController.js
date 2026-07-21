@@ -162,16 +162,32 @@ const createManual = asyncHandler(async (req, res) => {
   return success(res, application, null, 201);
 });
 
-const update = asyncHandler(async (req, res) => {
-  const application = await Application.findById(req.params.id);
-  if (!application) throw new ApiError(404, 'Application not found');
-
+function assertCanEditApplication(req, application) {
   const hasWrite = roleHasPermission(req.staff.role, PERMISSIONS.APPLICATIONS_WRITE);
   const hasIntake = roleHasPermission(req.staff.role, PERMISSIONS.APPLICATIONS_INTAKE);
 
   if (!hasWrite && hasIntake && application.status !== APPLICATION_STATUSES.DRAFT) {
     throw new ApiError(403, 'Reception can only edit draft applications');
   }
+}
+
+function pushUpdateActivity(application, req, note) {
+  application.activity.push({
+    action: 'updated',
+    note,
+    actorType: 'staff',
+    actorId: req.staff._id,
+    actorRole: req.staff.role,
+    actorName: `${req.staff.firstName} ${req.staff.lastName}`,
+    at: new Date(),
+  });
+}
+
+const update = asyncHandler(async (req, res) => {
+  const application = await Application.findById(req.params.id);
+  if (!application) throw new ApiError(404, 'Application not found');
+
+  assertCanEditApplication(req, application);
 
   const before = {
     personal: application.personal,
@@ -191,15 +207,7 @@ const update = asyncHandler(async (req, res) => {
     application.formAnswers = req.body.formAnswers;
   }
 
-  application.activity.push({
-    action: 'updated',
-    note: req.body.note || 'Application details updated',
-    actorType: 'staff',
-    actorId: req.staff._id,
-    actorRole: req.staff.role,
-    actorName: `${req.staff.firstName} ${req.staff.lastName}`,
-    at: new Date(),
-  });
+  pushUpdateActivity(application, req, req.body.note || 'Application details updated');
 
   await application.save();
   await auditFromReq(req, {
@@ -212,6 +220,116 @@ const update = asyncHandler(async (req, res) => {
       passport: application.passport,
       travel: application.travel,
       embassy: application.embassy,
+    },
+  });
+
+  return success(res, application);
+});
+
+const updateApplicant = asyncHandler(async (req, res) => {
+  const application = await Application.findById(req.params.id);
+  if (!application) throw new ApiError(404, 'Application not found');
+
+  assertCanEditApplication(req, application);
+
+  const before = { ...(application.personal?.toObject?.() || application.personal || {}) };
+  if (!application.personal) application.personal = {};
+
+  if (req.body.fullName !== undefined) application.personal.fullName = req.body.fullName;
+  if (req.body.dateOfBirth !== undefined) application.personal.dateOfBirth = req.body.dateOfBirth;
+  if (req.body.sex !== undefined) application.personal.sex = req.body.sex;
+  if (req.body.nationality !== undefined) {
+    application.personal.nationality = req.body.nationality
+      ? String(req.body.nationality).toUpperCase()
+      : req.body.nationality;
+  }
+  if (req.body.email !== undefined) {
+    application.personal.email = req.body.email
+      ? String(req.body.email).toLowerCase()
+      : req.body.email;
+  }
+
+  pushUpdateActivity(application, req, 'Applicant information updated');
+  await application.save();
+  await auditFromReq(req, {
+    action: 'application.update_applicant',
+    resourceType: 'Application',
+    resourceId: application._id,
+    before: { personal: before },
+    after: { personal: application.personal },
+  });
+
+  return success(res, application);
+});
+
+const updatePassport = asyncHandler(async (req, res) => {
+  const application = await Application.findById(req.params.id);
+  if (!application) throw new ApiError(404, 'Application not found');
+
+  assertCanEditApplication(req, application);
+
+  const before = { ...(application.passport?.toObject?.() || application.passport || {}) };
+  const next = { ...(application.passport?.toObject?.() || application.passport || {}) };
+
+  if (req.body.passportNumber !== undefined) next.passportNumber = req.body.passportNumber;
+  if (req.body.issuingCountry !== undefined) {
+    next.issuingCountry = req.body.issuingCountry
+      ? String(req.body.issuingCountry).toUpperCase()
+      : req.body.issuingCountry;
+  }
+  if (req.body.issueDate !== undefined) next.issueDate = req.body.issueDate;
+  if (req.body.expiryDate !== undefined) next.expiryDate = req.body.expiryDate;
+
+  application.passport = next;
+  pushUpdateActivity(application, req, 'Passport information updated');
+  await application.save();
+  await auditFromReq(req, {
+    action: 'application.update_passport',
+    resourceType: 'Application',
+    resourceId: application._id,
+    before: { passport: before },
+    after: { passport: application.passport },
+  });
+
+  return success(res, application);
+});
+
+const updateTravel = asyncHandler(async (req, res) => {
+  const application = await Application.findById(req.params.id);
+  if (!application) throw new ApiError(404, 'Application not found');
+
+  assertCanEditApplication(req, application);
+
+  const before = {
+    travel: { ...(application.travel?.toObject?.() || application.travel || {}) },
+    embassy: application.embassy,
+    paymentStatus: application.paymentStatus,
+  };
+
+  if (!application.travel) application.travel = {};
+
+  if (req.body.purpose !== undefined) application.travel.purpose = req.body.purpose;
+  if (req.body.entryDate !== undefined) application.travel.intendedEntryDate = req.body.entryDate;
+  if (req.body.exitDate !== undefined) application.travel.intendedExitDate = req.body.exitDate;
+  if (req.body.addressInAfghanistan !== undefined) {
+    application.travel.addressInAfghanistan = req.body.addressInAfghanistan;
+  }
+  if (req.body.embassy !== undefined) application.embassy = req.body.embassy || null;
+  if (req.body.payment !== undefined) application.paymentStatus = req.body.payment;
+
+  pushUpdateActivity(application, req, 'Travel & embassy information updated');
+  await application.save();
+  await application.populate('embassy', 'name code');
+
+  await auditFromReq(req, {
+    action: 'application.update_travel',
+    resourceType: 'Application',
+    resourceId: application._id,
+    before,
+    after: {
+      travel: application.travel,
+      embassy: application.embassy,
+      paymentStatus: application.paymentStatus,
     },
   });
 
@@ -323,6 +441,9 @@ module.exports = {
   getById,
   createManual,
   update,
+  updateApplicant,
+  updatePassport,
+  updateTravel,
   changeStatus,
   addNote,
   remove,

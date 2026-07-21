@@ -445,6 +445,23 @@ export async function extractPassportFromImage(file: File): Promise<PassportOcrR
   return { fields, warnings, confidence };
 }
 
+/**
+ * Basic passport check before filling the form: valid passport number,
+ * expiry date, and at least a partial name. Rejects non-passport / garbage OCR.
+ */
+export function isValidPassportOcrFields(fields: PassportOcrFields): boolean {
+  const passportNumber = fields.passportNumber.trim();
+  if (!/^[A-Za-z0-9]{6,9}$/.test(passportNumber)) return false;
+
+  const expiry = fields.passportExpiryDate.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(expiry)) return false;
+
+  // At least a partial name (two or more letters somewhere in the string)
+  if (!/[A-Za-z]{2,}/.test(fields.fullName.trim())) return false;
+
+  return true;
+}
+
 /** Map OCR preview fields into ApplyFlow form values (address/email/phone left to user). */
 export function ocrFieldsToFormValues(fields: PassportOcrFields): Record<string, string> {
   return {
