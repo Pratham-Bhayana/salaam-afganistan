@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Eye, EyeOff } from 'lucide-react';
 import {
   createEmbassy,
@@ -11,7 +11,8 @@ import {
   type Embassy,
   type VisaTypeOption,
 } from '../api/embassies';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import { Modal } from '../components/Modal';
 import '../components/Modal.css';
 import './EmbassyForm.css';
@@ -145,6 +146,8 @@ function buildPayload(form: FormState, mode: Mode): CreateEmbassyInput | Omit<Cr
 export function EmbassyForm({ mode }: { mode: Mode }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'embassy:setup');
   const [form, setForm] = useState<FormState>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState('');
@@ -303,6 +306,8 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
       setResetting(false);
     }
   }
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   if (loading) {
     return (

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { staffHasPermission, ApiError } from '../api/client';
 import { useAuth } from '../api/AuthContext';
@@ -96,20 +96,7 @@ export function AuditLogs() {
   }, [resourceIdInput]);
 
   if (!canRead) {
-    return (
-      <div className="audit-logs">
-        <header className="audit-logs__header">
-          <h1>Audit logs</h1>
-          <p>Platform activity history</p>
-        </header>
-        <div className="audit-logs__locked">
-          <h2>Access restricted</h2>
-          <p>
-            You need the <code>audit:read</code> permission to view audit logs.
-          </p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   const maxPage = Math.max(1, Math.ceil(total / pageSize) || 1);

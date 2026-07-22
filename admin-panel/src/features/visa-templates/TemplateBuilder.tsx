@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowLeft,
   ChevronLeft,
@@ -12,7 +12,8 @@ import {
   TextAlignStart,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ApiError } from '../../api/client';
+import { ApiError, staffHasPermission } from '../../api/client';
+import { useAuth } from '../../api/AuthContext';
 import {
   fromApiTemplate,
   getDefaultVisaTemplate,
@@ -59,6 +60,8 @@ function ensureFieldMap(
 export function TemplateBuilder() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'fees_content:manage');
 
   const [loading, setLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -167,6 +170,8 @@ export function TemplateBuilder() {
       setSaving(false);
     }
   }
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   if (loading) {
     return (

@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { ApiError } = require('./error');
 const Staff = require('../models/Staff');
-const { roleHasPermission, getPermissionsForRole } = require('../config/permissions');
+const { getEffectivePermissions } = require('../config/permissions');
 
 function signAccessToken(staff) {
   return jwt.sign(
@@ -60,7 +60,7 @@ async function authenticateStaff(req, res, next) {
       staffId: staff._id,
       role: staff.role,
       email: staff.email,
-      permissions: getPermissionsForRole(staff.role),
+      permissions: getEffectivePermissions(staff.role, staff.sectionOverrides),
     };
     return next();
   } catch (err) {
@@ -74,12 +74,17 @@ async function authenticateStaff(req, res, next) {
   }
 }
 
+function authHasPermission(auth, permission) {
+  const granted = auth?.permissions || [];
+  return granted.includes('*') || granted.includes(permission);
+}
+
 function requirePermission(...permissions) {
   return (req, res, next) => {
     if (!req.auth) {
       return next(new ApiError(401, 'Unauthorized'));
     }
-    const ok = permissions.every((p) => roleHasPermission(req.auth.role, p));
+    const ok = permissions.every((p) => authHasPermission(req.auth, p));
     if (!ok) {
       return next(new ApiError(403, 'Forbidden — insufficient permissions'));
     }
@@ -92,7 +97,7 @@ function requireAnyPermission(...permissions) {
     if (!req.auth) {
       return next(new ApiError(401, 'Unauthorized'));
     }
-    const ok = permissions.some((p) => roleHasPermission(req.auth.role, p));
+    const ok = permissions.some((p) => authHasPermission(req.auth, p));
     if (!ok) {
       return next(new ApiError(403, 'Forbidden — insufficient permissions'));
     }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { Building2, FileText, MessagesSquare, Paperclip, Send, X } from 'lucide-react';
 import { useAuth } from '../api/AuthContext';
 import { ApiError, staffHasPermission } from '../api/client';
@@ -196,16 +196,7 @@ export function Chat() {
       : null;
 
   if (!canChat) {
-    return (
-      <div className="admin-chat" style={{ display: 'grid', placeItems: 'center' }}>
-        <div className="admin-chat__locked">
-          <h2>Access restricted</h2>
-          <p>
-            You need the <code>chat:access</code> permission to use embassy chat.
-          </p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return (

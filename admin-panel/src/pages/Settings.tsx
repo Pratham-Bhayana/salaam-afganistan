@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { staffHasPermission, ApiError } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import { formatDate } from '../api/applications';
@@ -306,18 +306,7 @@ export function Settings() {
   }
 
   if (!canManage) {
-    return (
-      <div className="settings">
-        <header className="settings__header">
-          <h1>Settings</h1>
-          <p>Platform configuration</p>
-        </header>
-        <div className="settings__locked">
-          <h2>Access restricted</h2>
-          <p>You need the <code>settings:manage</code> permission to view and edit platform settings.</p>
-        </div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   if (loading && !loaded) {

@@ -104,6 +104,9 @@ export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { staff } = useAuth();
+  const canAccess =
+    staffHasPermission(staff, 'applications:read') ||
+    staffHasPermission(staff, 'applications:intake');
   const canChat = staffHasPermission(staff, 'chat:access');
   const canDelete = staffHasPermission(staff, 'applications:write');
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -272,6 +275,7 @@ export function ApplicationDetail() {
     el.scrollTop = el.scrollHeight;
   }, [embassyMessages.length, chatTab, embassyRoomId]);
 
+  if (!canAccess) return <Navigate to="/" replace />;
   if (!id) return <Navigate to="/applications" replace />;
   if (!loading && !app && error) {
     return (

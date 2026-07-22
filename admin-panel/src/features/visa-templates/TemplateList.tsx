@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { FileStack, Pencil, RefreshCw } from 'lucide-react';
-import { ApiError } from '../../api/client';
+import { ApiError, staffHasPermission } from '../../api/client';
+import { useAuth } from '../../api/AuthContext';
 import {
   fromApiTemplate,
   getDefaultVisaTemplate,
@@ -12,6 +13,8 @@ import { createEmptyTemplate, type VisaTemplate } from './types';
 import './visa-templates.css';
 
 export function TemplateList() {
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'fees_content:manage');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [template, setTemplate] = useState<VisaTemplate | null>(null);
@@ -42,6 +45,8 @@ export function TemplateList() {
   }, []);
 
   const cards = useMemo(() => (template ? [template] : []), [template]);
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   return (
     <div className="vt-list">

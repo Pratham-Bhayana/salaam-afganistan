@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import {
   Banknote,
   CheckCircle2,
@@ -28,7 +28,8 @@ import {
   submitWalkInApplication,
   type LookupResult,
 } from '../api/receptionist';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import './Receptionist.css';
 
@@ -50,6 +51,8 @@ const EMPTY_FORM = {
 };
 
 export function Receptionist() {
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'applications:intake');
   const [tab, setTab] = useState<Tab>('track');
   const [searchInput, setSearchInput] = useState('');
   const [searching, setSearching] = useState(false);
@@ -272,6 +275,8 @@ export function Receptionist() {
     if (detail) return detail;
     return results.find((r) => r._id === selectedId) || null;
   }, [detail, results, selectedId]);
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   return (
     <div className="reception">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -18,6 +18,9 @@ const POLL_MS = 8000;
 export function Applications() {
   const navigate = useNavigate();
   const { staff } = useAuth();
+  const canAccess =
+    staffHasPermission(staff, 'applications:read') ||
+    staffHasPermission(staff, 'applications:intake');
   const canDelete = staffHasPermission(staff, 'applications:write');
   const [deleteTarget, setDeleteTarget] = useState<ApplicationListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -104,6 +107,8 @@ export function Applications() {
       setDeleting(false);
     }
   }
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   return (
     <div className="applications">

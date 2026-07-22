@@ -9,7 +9,8 @@ import {
   type EmbassyApplicationRow,
   type EmbassyStatusCount,
 } from '../api/embassies';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import './EmbassyDetail.css';
 
@@ -25,6 +26,8 @@ const PIPELINE_ORDER = [
 export function EmbassyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'embassy:setup');
   const [embassy, setEmbassy] = useState<Embassy | null>(null);
   const [statusCounts, setStatusCounts] = useState<EmbassyStatusCount[]>([]);
   const [apps, setApps] = useState<EmbassyApplicationRow[]>([]);
@@ -77,6 +80,7 @@ export function EmbassyDetail() {
     void loadApps();
   }, [loadApps]);
 
+  if (!canAccess) return <Navigate to="/" replace />;
   if (!id) return <Navigate to="/embassies" replace />;
 
   if (!loading && !embassy) {

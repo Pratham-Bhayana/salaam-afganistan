@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { StaffOverview, type StaffViewMode } from '../components/StaffOverview';
 import { StaffDirectory } from '../components/StaffDirectory';
 import {
@@ -24,11 +25,15 @@ import {
   updateStaffAPI,
   updateStaffPermissionsAPI,
 } from '../api/staff';
+import { staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import './Staff.css';
 
 const TOTAL_SECTIONS = STAFF_SECTIONS.length;
 
 export function Staff() {
+  const { staff: session } = useAuth();
+  const canManage = staffHasPermission(session, 'staff:manage');
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -291,6 +296,8 @@ export function Staff() {
       setSaving(false);
     }
   }
+
+  if (!canManage) return <Navigate to="/" replace />;
 
   return (
     <div className="staff-page">
