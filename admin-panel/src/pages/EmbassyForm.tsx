@@ -297,7 +297,12 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
 
       {apiError ? <div className="embassy-form__banner">{apiError}</div> : null}
       {resetSuccess ? (
-        <div className="embassy-form__banner embassy-form__banner--success">{resetSuccess}</div>
+        <div
+          className="embassy-form__banner"
+          style={{ background: 'rgba(11, 61, 46, 0.1)', color: 'var(--brand)' }}
+        >
+          {resetSuccess}
+        </div>
       ) : null}
 
       <section className="embassy-form__section">
@@ -535,15 +540,42 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
       </div>
 
       {mode === 'edit' ? (
-        <section className="embassy-form__danger" aria-labelledby="embassy-security-heading">
-          <h2 id="embassy-security-heading">Security</h2>
-          <p>Set a new login password for this embassy account.</p>
+        <section
+          aria-labelledby="embassy-security-heading"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            marginTop: 8,
+            padding: 16,
+            border: '1px solid rgba(179, 58, 58, 0.22)',
+            borderRadius: 12,
+            background: 'rgba(179, 58, 58, 0.05)',
+          }}
+        >
+          <h2 id="embassy-security-heading" style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#8f2a2a' }}>
+            Security
+          </h2>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+            Set a new login password for this embassy admin account.
+          </p>
           <button
             type="button"
-            className="embassy-form__danger-btn"
             onClick={() => {
               setResetSuccess('');
               openResetModal();
+            }}
+            style={{
+              alignSelf: 'flex-start',
+              height: 38,
+              padding: '0 14px',
+              borderRadius: 10,
+              border: '1px solid rgba(179, 58, 58, 0.35)',
+              background: '#fff',
+              color: '#b33a3a',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
             }}
           >
             Reset Password
@@ -557,7 +589,7 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
         {resetError ? <div className="modal-form__error">{resetError}</div> : null}
         <label>
           New Password
-          <div className="embassy-form__password">
+          <div style={{ position: 'relative' }}>
             <input
               type={showResetPassword ? 'text' : 'password'}
               value={resetPasswordValue}
@@ -566,12 +598,27 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
               minLength={8}
               required
               autoFocus
+              style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
             />
             <button
               type="button"
-              className="embassy-form__reveal"
               onClick={() => setShowResetPassword((v) => !v)}
               aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 10,
+                transform: 'translateY(-50%)',
+                display: 'grid',
+                placeItems: 'center',
+                width: 36,
+                height: 36,
+                border: 'none',
+                borderRadius: 10,
+                background: 'transparent',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
             >
               {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
@@ -579,7 +626,7 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
         </label>
         <label>
           Confirm Password
-          <div className="embassy-form__password">
+          <div style={{ position: 'relative' }}>
             <input
               type={showResetConfirm ? 'text' : 'password'}
               value={resetConfirmValue}
@@ -587,12 +634,27 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
               autoComplete="new-password"
               minLength={8}
               required
+              style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
             />
             <button
               type="button"
-              className="embassy-form__reveal"
               onClick={() => setShowResetConfirm((v) => !v)}
               aria-label={showResetConfirm ? 'Hide password' : 'Show password'}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 10,
+                transform: 'translateY(-50%)',
+                display: 'grid',
+                placeItems: 'center',
+                width: 36,
+                height: 36,
+                border: 'none',
+                borderRadius: 10,
+                background: 'transparent',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
             >
               {showResetConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>

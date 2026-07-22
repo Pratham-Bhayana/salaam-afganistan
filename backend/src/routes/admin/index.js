@@ -241,8 +241,6 @@ router.delete('/embassies/:id', requirePermission(PERMISSIONS.EMBASSY_SETUP), em
 router.post(
   '/embassies/:id/reset-password',
   requirePermission(PERMISSIONS.EMBASSY_SETUP),
-  body('newPassword').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
-  validate,
   embassyController.resetPassword
 );
 router.get(

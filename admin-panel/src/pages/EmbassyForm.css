@@ -55,11 +55,6 @@
   font-size: 13px;
 }
 
-.embassy-form__banner--success {
-  background: rgba(11, 61, 46, 0.1);
-  color: var(--brand);
-}
-
 .embassy-form__section {
   display: flex;
   flex-direction: column;
@@ -322,77 +317,4 @@
 
 .embassy-form__collapse:hover {
   text-decoration: underline;
-}
-
-.embassy-form__danger {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 8px;
-  padding: 16px;
-  border: 1px solid rgba(179, 58, 58, 0.22);
-  border-radius: 12px;
-  background: rgba(179, 58, 58, 0.05);
-}
-
-.embassy-form__danger h2 {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: #8f2a2a;
-}
-
-.embassy-form__danger > p {
-  margin: 0;
-  font-size: 13px;
-  color: var(--ink-muted);
-  line-height: 1.45;
-}
-
-.embassy-form__danger-btn {
-  align-self: flex-start;
-  height: 38px;
-  padding: 0 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(179, 58, 58, 0.35);
-  background: #fff;
-  color: #b33a3a;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.embassy-form__danger-btn:hover {
-  background: rgba(179, 58, 58, 0.08);
-}
-
-.embassy-form__password {
-  position: relative;
-}
-
-.embassy-form__password input {
-  width: 100%;
-  box-sizing: border-box;
-  padding-right: 48px;
-}
-
-.embassy-form__reveal {
-  position: absolute;
-  top: 50%;
-  right: 10px;
-  transform: translateY(-50%);
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ink-muted);
-  cursor: pointer;
-}
-
-.embassy-form__reveal:hover {
-  background: rgba(26, 46, 40, 0.06);
-  color: var(--ink);
 }

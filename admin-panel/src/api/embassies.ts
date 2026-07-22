@@ -108,7 +108,7 @@ export async function deleteEmbassy(id: string) {
 }
 
 export async function resetEmbassyPassword(id: string, newPassword: string) {
-  return apiFetch<undefined>(`/embassies/${id}/reset-password`, {
+  return apiFetch<void>(`/embassies/${id}/reset-password`, {
     method: 'POST',
     body: JSON.stringify({ newPassword }),
   });

@@ -1,5 +1,4 @@
 const Embassy = require('../../models/Embassy');
-const EmbassyStaff = require('../../models/EmbassyStaff');
 const EmbassyRefreshToken = require('../../models/EmbassyRefreshToken');
 const Application = require('../../models/Application');
 const ChatRoom = require('../../models/ChatRoom');
@@ -7,8 +6,6 @@ const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination, escapeRegex } = require('../../utils/helpers');
 const { auditFromReq } = require('../../services/auditService');
 const { APPLICATION_STATUSES } = require('../../config/statusWorkflow');
-const { EMBASSY_ROLES } = require('../../config/embassyPermissions');
-
 const list = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
   const filter = {};
@@ -149,47 +146,31 @@ const resetPassword = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Password must be at least 8 characters');
   }
 
-  const embassy = await Embassy.findById(req.params.id);
+  const embassy = await Embassy.findById(req.params.id).select('+passwordHash');
   if (!embassy) throw new ApiError(404, 'Embassy not found');
-
-  let staff = await EmbassyStaff.findOne({
-    embassy: embassy._id,
-    role: EMBASSY_ROLES.EMBASSY_ADMIN,
-    isActive: true,
-  })
-    .select('+passwordHash')
-    .sort({ createdAt: 1 });
-
-  if (!staff) {
-    staff = await EmbassyStaff.findOne({ embassy: embassy._id, isActive: true })
-      .select('+passwordHash')
-      .sort({ createdAt: 1 });
+  if (!embassy.email) {
+    throw new ApiError(404, 'No admin account found for this embassy');
   }
 
-  if (!staff) {
-    throw new ApiError(404, 'No embassy login account found for this embassy');
-  }
-
-  staff.passwordHash = await EmbassyStaff.hashPassword(newPassword);
-  staff.passwordResetTokenHash = undefined;
-  staff.passwordResetExpiresAt = undefined;
-  await staff.save();
+  embassy.passwordHash = await Embassy.hashPassword(newPassword);
+  embassy.passwordResetTokenHash = undefined;
+  embassy.passwordResetExpiresAt = undefined;
+  await embassy.save();
 
   await EmbassyRefreshToken.updateMany(
-    { embassyStaff: staff._id, revokedAt: null },
+    { embassyStaff: embassy._id, revokedAt: null },
     { $set: { revokedAt: new Date() } }
   );
 
   await auditFromReq(req, {
     action: 'embassy.reset_password',
-    resourceType: 'EmbassyStaff',
-    resourceId: staff._id,
-    meta: { embassyId: embassy._id, email: staff.email },
+    resourceType: 'Embassy',
+    resourceId: embassy._id,
+    meta: { email: embassy.email },
   });
 
   return res.status(200).json({ success: true });
 });
-
 module.exports = {
   list,
   getById,
