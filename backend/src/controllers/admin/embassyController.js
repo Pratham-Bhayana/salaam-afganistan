@@ -1,10 +1,13 @@
 const Embassy = require('../../models/Embassy');
+const EmbassyStaff = require('../../models/EmbassyStaff');
+const EmbassyRefreshToken = require('../../models/EmbassyRefreshToken');
 const Application = require('../../models/Application');
 const ChatRoom = require('../../models/ChatRoom');
 const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination, escapeRegex } = require('../../utils/helpers');
 const { auditFromReq } = require('../../services/auditService');
 const { APPLICATION_STATUSES } = require('../../config/statusWorkflow');
+const { EMBASSY_ROLES } = require('../../config/embassyPermissions');
 
 const list = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
@@ -140,6 +143,53 @@ const remove = asyncHandler(async (req, res) => {
   return success(res, { deleted: true, id: embassy._id });
 });
 
+const resetPassword = asyncHandler(async (req, res) => {
+  const newPassword = String(req.body.newPassword || '');
+  if (newPassword.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters');
+  }
+
+  const embassy = await Embassy.findById(req.params.id);
+  if (!embassy) throw new ApiError(404, 'Embassy not found');
+
+  let staff = await EmbassyStaff.findOne({
+    embassy: embassy._id,
+    role: EMBASSY_ROLES.EMBASSY_ADMIN,
+    isActive: true,
+  })
+    .select('+passwordHash')
+    .sort({ createdAt: 1 });
+
+  if (!staff) {
+    staff = await EmbassyStaff.findOne({ embassy: embassy._id, isActive: true })
+      .select('+passwordHash')
+      .sort({ createdAt: 1 });
+  }
+
+  if (!staff) {
+    throw new ApiError(404, 'No embassy login account found for this embassy');
+  }
+
+  staff.passwordHash = await EmbassyStaff.hashPassword(newPassword);
+  staff.passwordResetTokenHash = undefined;
+  staff.passwordResetExpiresAt = undefined;
+  await staff.save();
+
+  await EmbassyRefreshToken.updateMany(
+    { embassyStaff: staff._id, revokedAt: null },
+    { $set: { revokedAt: new Date() } }
+  );
+
+  await auditFromReq(req, {
+    action: 'embassy.reset_password',
+    resourceType: 'EmbassyStaff',
+    resourceId: staff._id,
+    meta: { embassyId: embassy._id, email: staff.email },
+  });
+
+  return res.status(200).json({ success: true });
+});
+
 module.exports = {
   list,
   getById,
@@ -147,4 +197,5 @@ module.exports = {
   update,
   remove,
   applicationsForEmbassy,
+  resetPassword,
 };

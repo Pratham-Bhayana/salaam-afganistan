@@ -170,9 +170,14 @@ function resolveFieldValue({ key, application, visaNumber, validFrom, validUntil
 
 function resolveAssetCandidates(urlOrPath) {
   const raw = String(urlOrPath || '').trim();
+  // PDFKit only embeds local files. Remote http(s) URLs are not fetched —
+  // they must be resolved to a path under uploads/ or backend/assets/.
   if (!raw || raw.startsWith('http://') || raw.startsWith('https://')) return [];
 
   const cleaned = raw.replace(/^\//, '');
+  const base = path.basename(cleaned);
+  const baseLower = base.toLowerCase();
+  const assetsRoot = path.join(__dirname, '../../assets');
   const candidates = [];
 
   // Absolute path only if the file actually exists (avoid treating "/Logo.png" as FS root)
@@ -181,23 +186,46 @@ function resolveAssetCandidates(urlOrPath) {
   }
 
   candidates.push(
+    // Deployed with the backend (Railway) — preferred defaults
+    path.join(assetsRoot, 'branding', cleaned),
+    path.join(assetsRoot, 'branding', base),
+    path.join(assetsRoot, 'branding', baseLower),
+    path.join(assetsRoot, cleaned),
     path.join(uploadRoot, cleaned),
     path.join(uploadRoot, 'branding', cleaned),
+    path.join(uploadRoot, 'branding', base),
+    // Local monorepo fallbacks (dev only — not present on Railway backend-only deploys)
     path.join(__dirname, '../../../admin-panel/public', cleaned),
     path.join(__dirname, '../../../website/public', cleaned),
     path.join(__dirname, '../../../website', cleaned),
-    // Case variants used across panels
-    path.join(__dirname, '../../../admin-panel/public', path.basename(cleaned)),
-    path.join(__dirname, '../../../website/public', path.basename(cleaned).toLowerCase())
+    path.join(__dirname, '../../../admin-panel/public', base),
+    path.join(__dirname, '../../../website/public', baseLower)
   );
 
   return [...new Set(candidates)];
 }
 
 function resolveAssetPath(urlOrPath) {
-  for (const file of resolveAssetCandidates(urlOrPath)) {
-    if (fs.existsSync(file)) return file;
+  const raw = String(urlOrPath || '').trim();
+  if (raw.startsWith('http://') || raw.startsWith('https://')) {
+    console.warn(
+      `[visaPDF] Logo URL is remote and cannot be embedded by PDFKit (no HTTP fetch): ${raw}`
+    );
+    return null;
   }
+
+  for (const file of resolveAssetCandidates(urlOrPath)) {
+    if (fs.existsSync(file)) {
+      console.log(`[visaPDF] Resolved logo asset "${raw}" → ${file}`);
+      return file;
+    }
+  }
+
+  console.warn(
+    `[visaPDF] Logo asset not found on disk: "${raw}". ` +
+      'Expected a relative path like /Logo.png under backend/assets/branding or uploads/branding. ' +
+      'There is no VITE_/LOGO_URL env for PDF logos.'
+  );
   return null;
 }
 
@@ -376,6 +404,15 @@ async function generateVisaPdf({
 
     const salaamLogo = layout.salaamLogoUrl || template.logoImageUrl || '/Logo.png';
     const embassyLogo = layout.embassyLogoUrl || template.sealImageUrl || '/taliban-flag.png';
+    console.log('[visaPDF] Header logo paths from template:', {
+      salaamLogo,
+      embassyLogo,
+      layoutSalaam: layout.salaamLogoUrl || null,
+      layoutEmbassy: layout.embassyLogoUrl || null,
+      templateLogo: template.logoImageUrl || null,
+      templateSeal: template.sealImageUrl || null,
+      note: 'PDF logos are local filesystem paths only — not VITE_ env URLs; CORS does not apply',
+    });
     const logoMaxW = 128;
     const logoMaxH = 52;
     const leftLogo = drawFittedImage(doc, salaamLogo, marginX, y, logoMaxW, logoMaxH, {
@@ -391,6 +428,12 @@ async function generateVisaPdf({
       logoMaxH,
       { align: 'right', valign: 'center' }
     );
+    if (!leftLogo.drawn || !rightLogo.drawn) {
+      console.warn('[visaPDF] One or more header logos failed to draw', {
+        salaamDrawn: leftLogo.drawn,
+        embassyDrawn: rightLogo.drawn,
+      });
+    }
     y += Math.max(leftLogo.height, rightLogo.height, 40) + 14;
 
     doc.fillColor(accent);

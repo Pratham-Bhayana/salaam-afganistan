@@ -107,6 +107,13 @@ export async function deleteEmbassy(id: string) {
   });
 }
 
+export async function resetEmbassyPassword(id: string, newPassword: string) {
+  return apiFetch<undefined>(`/embassies/${id}/reset-password`, {
+    method: 'POST',
+    body: JSON.stringify({ newPassword }),
+  });
+}
+
 export async function listEmbassyApplications(
   id: string,
   params: { page?: number; limit?: number; status?: string } = {}

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import {
   Area,
   AreaChart,
@@ -29,7 +30,21 @@ import {
   type DashboardData,
   type PeriodKey,
 } from '../api/dashboard';
+import {
+  fetchNotifications,
+  markNotificationRead,
+  notificationMessage,
+  type PanelNotification,
+} from '../api/notifications';
+import { decrementNotifUnread, patchUnreadState, refreshUnreadCounts } from '../layout/unreadStore';
 import './Dashboard.css';
+
+const notificationsPanelStyle = {
+  height: 'fit-content',
+  minHeight: 'unset',
+  maxHeight: 'none',
+  alignSelf: 'start' as const,
+};
 
 const tooltipStyle = {
   background: '#ffffff',
@@ -41,12 +56,27 @@ const tooltipStyle = {
 };
 
 const POLL_MS = 15000;
+const NOTIF_POLL_MS = 30000;
+
+function formatNotifTime(value?: string) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString(undefined, {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
 
 export function Dashboard() {
   const [period, setPeriod] = useState<PeriodKey>('monthly');
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notifications, setNotifications] = useState<PanelNotification[]>([]);
+  const [dismissingId, setDismissingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -60,10 +90,29 @@ export function Dashboard() {
     }
   }, [period]);
 
+  const loadNotifications = useCallback(async () => {
+    try {
+      const { data: list, meta } = await fetchNotifications({ limit: 20 });
+      const unread = Array.isArray(list) ? list.filter((n) => n.isRead !== true) : [];
+      setNotifications(unread);
+      const count =
+        typeof meta?.unreadCount === 'number' ? meta.unreadCount : unread.length;
+      patchUnreadState({ notifUnread: count });
+    } catch {
+      setNotifications([]);
+    }
+  }, []);
+
   useEffect(() => {
     setLoading(true);
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadNotifications();
+    const id = window.setInterval(() => void loadNotifications(), NOTIF_POLL_MS);
+    return () => window.clearInterval(id);
+  }, [loadNotifications]);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -93,8 +142,26 @@ export function Dashboard() {
 
   const hasCharts = Boolean(data);
 
+  async function dismissNotification(id: string) {
+    setDismissingId(id);
+    setNotifications((prev) => prev.filter((n) => n._id !== id));
+    decrementNotifUnread(1);
+    try {
+      await markNotificationRead(id);
+    } catch {
+      void loadNotifications();
+      void refreshUnreadCounts();
+    } finally {
+      setDismissingId(null);
+    }
+  }
+
   return (
-    <div className="dashboard">
+    <div
+      className="dashboard"
+      style={notifications.length > 0 ? undefined : { gridTemplateColumns: '1fr' }}
+    >
+      <div className="dashboard__main">
       <header className="dashboard__header">
         <div>
           <h1 className="dashboard__title">Dashboard</h1>
@@ -255,6 +322,43 @@ export function Dashboard() {
             </ChartCard>
           </section>
         </>
+      ) : null}
+      </div>
+
+      {notifications.length > 0 ? (
+      <aside
+        className="dashboard__notifications"
+        style={notificationsPanelStyle}
+        aria-label="Notifications"
+      >
+        <div className="dashboard__notifications-head">
+          <h2>Notifications</h2>
+        </div>
+          <ul className="dashboard__notifications-list">
+            {notifications.map((notif) => (
+              <li key={notif._id} className="dashboard__notification">
+                <div className="dashboard__notification-body">
+                  <strong>{notif.title || 'Notification'}</strong>
+                  {notificationMessage(notif) ? (
+                    <p>{notificationMessage(notif)}</p>
+                  ) : null}
+                  <time dateTime={notif.createdAt || undefined}>
+                    {formatNotifTime(notif.createdAt)}
+                  </time>
+                </div>
+                <button
+                  type="button"
+                  className="dashboard__notification-dismiss"
+                  aria-label="Dismiss notification"
+                  disabled={dismissingId === notif._id}
+                  onClick={() => void dismissNotification(notif._id)}
+                >
+                  <X size={14} strokeWidth={2} />
+                </button>
+              </li>
+            ))}
+          </ul>
+      </aside>
       ) : null}
     </div>
   );

@@ -1,9 +1,43 @@
 const ChatRoom = require('../../models/ChatRoom');
 const ChatMessage = require('../../models/ChatMessage');
 const Embassy = require('../../models/Embassy');
+const Notification = require('../../models/Notification');
+const EmbassyStaff = require('../../models/EmbassyStaff');
 const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination } = require('../../utils/helpers');
 const { unreadCountsByRoom, markRoomRead, totalUnread } = require('../../services/chatReadService');
+
+function messagePreview(body, max = 160) {
+  const text = String(body || '').trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+async function notifyEmbassyStaffOfChatMessage(room, message, senderName) {
+  const embassyIds = [room.embassy];
+  if (room.peerEmbassy) embassyIds.push(room.peerEmbassy);
+
+  const recipients = await EmbassyStaff.find({
+    isActive: true,
+    embassy: { $in: embassyIds.filter(Boolean) },
+  })
+    .select('_id')
+    .lean();
+
+  if (!recipients.length) return;
+
+  await Notification.insertMany(
+    recipients.map((recipient) => ({
+      audience: 'embassy',
+      recipientId: recipient._id,
+      channel: 'in_app',
+      type: 'chat.message',
+      title: 'New chat message',
+      body: `${senderName}: ${messagePreview(message.body)}`,
+      application: room.application,
+      meta: { roomId: room._id, messageId: message._id, roomType: room.type },
+    }))
+  );
+}
 
 const unreadSummary = asyncHandler(async (req, res) => {
   const rooms = await ChatRoom.find({ isActive: true }).select('_id');
@@ -121,6 +155,9 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   room.lastMessageAt = new Date();
   await room.save();
+
+  const senderName = `${req.staff.firstName} ${req.staff.lastName}`.trim();
+  await notifyEmbassyStaffOfChatMessage(room, message, senderName);
 
   return success(res, message, null, 201);
 });

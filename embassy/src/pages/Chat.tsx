@@ -29,6 +29,7 @@ import {
   type ChatRoom,
   type PeerEmbassy,
 } from '../api/chat';
+import { clearRoomUnread } from '../layout/unreadStore';
 import './Chat.css';
 
 const ROOMS_POLL_MS = 12000;
@@ -83,9 +84,11 @@ export function Chat() {
       // markRead defaults true — opens thread as seen for the peer's receipts
       const { data } = await listChatMessages(roomId, { limit: 100 });
       setMessages(Array.isArray(data) ? data : []);
-      setRooms((prev) =>
-        prev.map((r) => (r._id === roomId ? { ...r, unreadCount: 0 } : r))
-      );
+      setRooms((prev) => {
+        const room = prev.find((r) => r._id === roomId);
+        if (room) clearRoomUnread(room);
+        return prev.map((r) => (r._id === roomId ? { ...r, unreadCount: 0 } : r));
+      });
       setError('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load messages');
@@ -341,16 +344,29 @@ export function Chat() {
                   <Icon size={16} />
                 </span>
                 <span className="chat__room-meta">
-                  <strong>{roomLabel(room, myEmbassyId)}</strong>
+                  <strong>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        maxWidth: '100%',
+                      }}
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {roomLabel(room, myEmbassyId)}
+                      </span>
+                      {unread > 0 ? (
+                        <span className="chat__unread" aria-label={`${unread} unread`}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      ) : null}
+                    </span>
+                  </strong>
                   <span>{roomSubtitle(room, myEmbassyId)}</span>
                 </span>
                 <span className="chat__room-aside">
                   <time>{formatChatTime(room.lastMessageAt || room.updatedAt)}</time>
-                  {unread > 0 ? (
-                    <span className="chat__unread" aria-label={`${unread} unread`}>
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  ) : null}
                 </span>
               </button>
             );

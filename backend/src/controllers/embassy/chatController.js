@@ -1,6 +1,9 @@
 const ChatRoom = require('../../models/ChatRoom');
 const ChatMessage = require('../../models/ChatMessage');
 const Embassy = require('../../models/Embassy');
+const Notification = require('../../models/Notification');
+const Staff = require('../../models/Staff');
+const EmbassyStaff = require('../../models/EmbassyStaff');
 const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination } = require('../../utils/helpers');
 const { activityFromReq } = require('../../services/embassyActivityService');
@@ -10,6 +13,59 @@ const {
   totalUnread,
   markRoomRead,
 } = require('../../services/chatReadService');
+
+function messagePreview(body, max = 160) {
+  const text = String(body || '').trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
+async function notifyStaffOfChatMessage(room, message, senderName) {
+  const recipients = await Staff.find({ isActive: true }).select('_id').lean();
+  if (!recipients.length) return;
+
+  await Notification.insertMany(
+    recipients.map((recipient) => ({
+      audience: 'staff',
+      recipientId: recipient._id,
+      channel: 'in_app',
+      type: 'chat.message',
+      title: 'New chat message',
+      body: `${senderName}: ${messagePreview(message.body)}`,
+      application: room.application,
+      meta: { roomId: room._id, messageId: message._id, roomType: room.type },
+    }))
+  );
+}
+
+async function notifyPeerEmbassyStaffOfChatMessage(room, message, senderName, senderEmbassyId) {
+  if (room.type !== 'inter_embassy') return;
+
+  const peerEmbassyId =
+    String(room.embassy) === String(senderEmbassyId) ? room.peerEmbassy : room.embassy;
+  if (!peerEmbassyId) return;
+
+  const recipients = await EmbassyStaff.find({
+    isActive: true,
+    embassy: peerEmbassyId,
+  })
+    .select('_id')
+    .lean();
+
+  if (!recipients.length) return;
+
+  await Notification.insertMany(
+    recipients.map((recipient) => ({
+      audience: 'embassy',
+      recipientId: recipient._id,
+      channel: 'in_app',
+      type: 'chat.message',
+      title: 'New chat message',
+      body: `${senderName}: ${messagePreview(message.body)}`,
+      application: room.application,
+      meta: { roomId: room._id, messageId: message._id, roomType: room.type },
+    }))
+  );
+}
 
 function embassyCanAccessRoom(embassyId, room) {
   if (!room) return false;
@@ -202,6 +258,10 @@ const sendMessage = asyncHandler(async (req, res) => {
 
   room.lastMessageAt = new Date();
   await room.save();
+
+  const senderName = `${req.embassyStaff.firstName} ${req.embassyStaff.lastName}`.trim();
+  await notifyStaffOfChatMessage(room, message, senderName);
+  await notifyPeerEmbassyStaffOfChatMessage(room, message, senderName, req.embassyId);
 
   await activityFromReq(req, {
     action: 'chat.message',

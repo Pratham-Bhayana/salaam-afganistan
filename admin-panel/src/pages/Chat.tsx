@@ -15,6 +15,7 @@ import {
   type ChatMessage,
   type ChatRoom,
 } from '../api/chat';
+import { clearRoomUnread } from '../layout/unreadStore';
 import './Chat.css';
 
 const ROOMS_POLL_MS = 12000;
@@ -68,6 +69,11 @@ export function Chat() {
     try {
       const { data } = await listChatMessages(roomId, { limit: 100 });
       setMessages(Array.isArray(data) ? data : []);
+      setRooms((prev) => {
+        const room = prev.find((r) => r._id === roomId);
+        if (room) clearRoomUnread(room);
+        return prev.map((r) => (r._id === roomId ? { ...r, unreadCount: 0 } : r));
+      });
       setError('');
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Failed to load messages');
@@ -263,19 +269,38 @@ export function Chat() {
 
           {filteredRooms.map((room) => {
             const active = room._id === activeRoomId;
+            const unread = room.unreadCount || 0;
             const Icon = room.type === 'general' ? Building2 : FileText;
             return (
               <button
                 key={room._id}
                 type="button"
-                className={`admin-chat__room${active ? ' is-active' : ''}`}
+                className={`admin-chat__room${active ? ' is-active' : ''}${unread > 0 ? ' has-unread' : ''}`}
                 onClick={() => selectRoom(room)}
               >
                 <span className="admin-chat__room-icon" aria-hidden>
                   <Icon size={16} />
                 </span>
                 <span className="admin-chat__room-meta">
-                  <strong>{roomLabel(room)}</strong>
+                  <strong>
+                    <span
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        maxWidth: '100%',
+                      }}
+                    >
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {roomLabel(room)}
+                      </span>
+                      {unread > 0 ? (
+                        <span className="admin-chat__unread" aria-label={`${unread} unread`}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      ) : null}
+                    </span>
+                  </strong>
                   <span>{roomSubtitle(room)}</span>
                 </span>
                 <time>{formatChatTime(room.lastMessageAt || room.updatedAt)}</time>

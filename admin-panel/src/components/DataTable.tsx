@@ -11,6 +11,7 @@ type Props = {
   onToggleAll: () => void;
   onViewRow?: (id: string) => void;
   onDeleteRow?: (row: ApplicationListItem) => void;
+  chatUnreadByAppId?: Record<string, number>;
   page: number;
   pageSize: number;
   totalItems: number;
@@ -25,6 +26,7 @@ export function DataTable({
   onToggleAll,
   onViewRow,
   onDeleteRow,
+  chatUnreadByAppId,
   page,
   pageSize,
   totalItems,
@@ -62,6 +64,7 @@ export function DataTable({
           <tbody>
             {rows.map((row) => {
               const selected = selectedIds.has(row._id);
+              const unread = chatUnreadByAppId?.[row._id] || 0;
               return (
                 <tr key={row._id} className={selected ? 'is-selected' : undefined}>
                   <td className="data-table__check">
@@ -72,7 +75,16 @@ export function DataTable({
                       aria-label={`Select ${row.personal?.fullName || row.referenceId}`}
                     />
                   </td>
-                  <td className="data-table__name">{row.personal?.fullName || '—'}</td>
+                  <td className="data-table__name">
+                    <span className="data-table__name-wrap">
+                      {row.personal?.fullName || '—'}
+                      {unread > 0 ? (
+                        <span className="data-table__unread" aria-label={`${unread} unread messages`}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
                   <td>{row.visaTypeCode}</td>
                   <td>
                     <StatusPill status={row.status} />

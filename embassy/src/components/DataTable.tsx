@@ -8,6 +8,7 @@ type Props = {
   rows: ApplicationListItem[];
   onViewRow?: (id: string) => void;
   onDeleteRow?: (row: ApplicationListItem) => void;
+  chatUnreadByAppId?: Record<string, number>;
   page: number;
   pageSize: number;
   totalItems: number;
@@ -19,6 +20,7 @@ export function DataTable({
   rows,
   onViewRow,
   onDeleteRow,
+  chatUnreadByAppId,
   page,
   pageSize,
   totalItems,
@@ -52,9 +54,20 @@ export function DataTable({
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              rows.map((row) => {
+                const unread = chatUnreadByAppId?.[row._id] || 0;
+                return (
                 <tr key={row._id}>
-                  <td className="data-table__name">{row.personal?.fullName || '—'}</td>
+                  <td className="data-table__name">
+                    <span className="data-table__name-wrap">
+                      {row.personal?.fullName || '—'}
+                      {unread > 0 ? (
+                        <span className="data-table__unread" aria-label={`${unread} unread messages`}>
+                          {unread > 99 ? '99+' : unread}
+                        </span>
+                      ) : null}
+                    </span>
+                  </td>
                   <td>{row.visaTypeCode}</td>
                   <td>
                     <StatusPill status={row.status} />
@@ -83,7 +96,8 @@ export function DataTable({
                     ) : null}
                   </td>
                 </tr>
-              ))
+              );
+              })
             )}
           </tbody>
         </table>

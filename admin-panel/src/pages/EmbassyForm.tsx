@@ -1,15 +1,19 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   createEmbassy,
   getEmbassy,
   listVisaTypesForPicker,
+  resetEmbassyPassword,
   updateEmbassy,
   type CreateEmbassyInput,
   type Embassy,
   type VisaTypeOption,
 } from '../api/embassies';
 import { ApiError } from '../api/client';
+import { Modal } from '../components/Modal';
+import '../components/Modal.css';
 import './EmbassyForm.css';
 
 type Mode = 'create' | 'edit';
@@ -116,6 +120,14 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
   const [visaTypes, setVisaTypes] = useState<VisaTypeOption[]>([]);
   const [countryDraft, setCountryDraft] = useState('');
   const [brandingOpen, setBrandingOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resetConfirmValue, setResetConfirmValue] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -205,6 +217,58 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
     }
   }
 
+  function openResetModal() {
+    setResetError('');
+    setResetPasswordValue('');
+    setResetConfirmValue('');
+    setShowResetPassword(false);
+    setShowResetConfirm(false);
+    setResetOpen(true);
+  }
+
+  function closeResetModal() {
+    if (resetting) return;
+    setResetOpen(false);
+    setResetError('');
+    setResetPasswordValue('');
+    setResetConfirmValue('');
+    setShowResetPassword(false);
+    setShowResetConfirm(false);
+  }
+
+  async function onSubmitResetPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+
+    const password = resetPasswordValue;
+    const confirm = resetConfirmValue;
+    if (password.length < 8) {
+      setResetError('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirm) {
+      setResetError('Passwords do not match');
+      return;
+    }
+
+    setResetting(true);
+    setResetError('');
+    try {
+      await resetEmbassyPassword(id, password);
+      setResetOpen(false);
+      setResetPasswordValue('');
+      setResetConfirmValue('');
+      setShowResetPassword(false);
+      setShowResetConfirm(false);
+      setResetError('');
+      setResetSuccess('Password updated successfully');
+    } catch (err) {
+      setResetError(err instanceof ApiError ? err.message : 'Failed to reset password');
+    } finally {
+      setResetting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="embassy-form">
@@ -214,6 +278,7 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
   }
 
   return (
+    <>
     <form className="embassy-form" onSubmit={(e) => void onSubmit(e)} noValidate>
       <nav className="embassy-form__crumbs" aria-label="Breadcrumb">
         <Link to="/embassies">Embassies</Link>
@@ -231,6 +296,9 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
       </p>
 
       {apiError ? <div className="embassy-form__banner">{apiError}</div> : null}
+      {resetSuccess ? (
+        <div className="embassy-form__banner embassy-form__banner--success">{resetSuccess}</div>
+      ) : null}
 
       <section className="embassy-form__section">
         <h2>Identity</h2>
@@ -465,6 +533,81 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
           {saving ? 'Saving…' : mode === 'create' ? 'Create embassy' : 'Save changes'}
         </button>
       </div>
+
+      {mode === 'edit' ? (
+        <section className="embassy-form__danger" aria-labelledby="embassy-security-heading">
+          <h2 id="embassy-security-heading">Security</h2>
+          <p>Set a new login password for this embassy account.</p>
+          <button
+            type="button"
+            className="embassy-form__danger-btn"
+            onClick={() => {
+              setResetSuccess('');
+              openResetModal();
+            }}
+          >
+            Reset Password
+          </button>
+        </section>
+      ) : null}
     </form>
+
+    <Modal open={resetOpen} title="Reset password" onClose={closeResetModal}>
+      <form className="modal-form" onSubmit={(e) => void onSubmitResetPassword(e)}>
+        {resetError ? <div className="modal-form__error">{resetError}</div> : null}
+        <label>
+          New Password
+          <div className="embassy-form__password">
+            <input
+              type={showResetPassword ? 'text' : 'password'}
+              value={resetPasswordValue}
+              onChange={(e) => setResetPasswordValue(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+              autoFocus
+            />
+            <button
+              type="button"
+              className="embassy-form__reveal"
+              onClick={() => setShowResetPassword((v) => !v)}
+              aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+            >
+              {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </label>
+        <label>
+          Confirm Password
+          <div className="embassy-form__password">
+            <input
+              type={showResetConfirm ? 'text' : 'password'}
+              value={resetConfirmValue}
+              onChange={(e) => setResetConfirmValue(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+            />
+            <button
+              type="button"
+              className="embassy-form__reveal"
+              onClick={() => setShowResetConfirm((v) => !v)}
+              aria-label={showResetConfirm ? 'Hide password' : 'Show password'}
+            >
+              {showResetConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </label>
+        <div className="modal-form__actions">
+          <button type="button" className="is-ghost" disabled={resetting} onClick={closeResetModal}>
+            Cancel
+          </button>
+          <button type="submit" className="is-danger" disabled={resetting}>
+            {resetting ? 'Saving…' : 'Update Password'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+    </>
   );
 }

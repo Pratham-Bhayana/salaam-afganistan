@@ -9,6 +9,7 @@ import {
   type ApplicationListItem,
 } from '../api/applications';
 import { ApiError } from '../api/client';
+import { useUnreadState } from '../layout/unreadStore';
 import './Applications.css';
 
 const POLL_MS = 8000;
@@ -22,6 +23,7 @@ export function Applications() {
   const [pageSize, setPageSize] = useState(10);
   const [rows, setRows] = useState<ApplicationListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const { applicationUnreadByAppId: chatUnreadByAppId } = useUnreadState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<ApplicationListItem | null>(null);
@@ -98,6 +100,7 @@ export function Applications() {
         rows={rows}
         onViewRow={(id) => navigate(`/applications/${id}`)}
         onDeleteRow={(row) => setDeleteTarget(row)}
+        chatUnreadByAppId={chatUnreadByAppId}
         page={page}
         pageSize={pageSize}
         totalItems={total}

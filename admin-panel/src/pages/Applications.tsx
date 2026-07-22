@@ -10,6 +10,7 @@ import {
 } from '../api/applications';
 import { ApiError, staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
+import { useUnreadState } from '../layout/unreadStore';
 import './Applications.css';
 
 const POLL_MS = 8000;
@@ -29,6 +30,7 @@ export function Applications() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [rows, setRows] = useState<ApplicationListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const { applicationUnreadByAppId: chatUnreadByAppId } = useUnreadState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -126,6 +128,7 @@ export function Applications() {
         onToggleAll={toggleAll}
         onViewRow={(id) => navigate(`/applications/${id}`)}
         onDeleteRow={canDelete ? (row) => setDeleteTarget(row) : undefined}
+        chatUnreadByAppId={chatUnreadByAppId}
         page={page}
         pageSize={pageSize}
         totalItems={total}
