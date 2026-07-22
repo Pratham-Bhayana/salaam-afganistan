@@ -43,9 +43,23 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
+  const loginEmail = String(req.body.loginEmail || '').trim().toLowerCase();
+  const loginPassword = String(req.body.loginPassword || '');
+
+  if (!loginEmail) {
+    throw new ApiError(400, 'Login email is required');
+  }
+  if (loginPassword.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters');
+  }
+
+  const passwordHash = await Embassy.hashPassword(loginPassword);
+
   const embassy = await Embassy.create({
     code: String(req.body.code).toUpperCase(),
     name: req.body.name,
+    email: loginEmail,
+    passwordHash,
     logoUrl: req.body.logoUrl,
     branding: req.body.branding,
     contact: req.body.contact,
