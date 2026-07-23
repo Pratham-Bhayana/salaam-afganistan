@@ -33,7 +33,10 @@ export function AboutStory() {
           <div className={styles.visual}>
             <div className={styles.logoCard}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/moic.png" alt="Salaam Afghanistan logo" />
+              <img src="/logo.png" alt="Salaam Afghanistan logo" className={styles.brandLogo} />
+              <span className={styles.logoCardDivider} aria-hidden />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/moic.png" alt="Ministry of Information and Culture" className={styles.moicLogo} />
               <div>
                 <strong>RAIZING GLOBAL</strong>
                 <span>Rise to Excellence</span>

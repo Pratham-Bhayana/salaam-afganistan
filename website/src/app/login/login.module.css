@@ -17,12 +17,35 @@
   padding: 2rem;
 }
 
+.logoPair {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  margin: 0 auto 1.25rem;
+}
+
+.logoPairDivider {
+  width: 1px;
+  height: 40px;
+  background: var(--color-gray-300);
+  flex-shrink: 0;
+}
+
+.brandLogo {
+  display: block;
+  height: 56px;
+  width: auto;
+  max-width: 150px;
+  object-fit: contain;
+}
+
 .logo {
   display: block;
   height: 72px;
   width: 72px;
   max-width: none;
-  margin: 0 auto 1.25rem;
+  margin: 0;
   object-fit: contain;
   border-radius: 50%;
 }

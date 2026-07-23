@@ -40,6 +40,13 @@
   border-radius: 50%;
 }
 
+.sidebar__logo--brand {
+  height: 44px;
+  width: auto;
+  max-width: 96px;
+  border-radius: 0;
+}
+
 .sidebar__logo--raizing {
   height: 42px;
   max-width: 120px;

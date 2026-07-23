@@ -13,7 +13,10 @@ export function Footer() {
           <div className={styles.brandCol}>
             <div className={styles.logoBox}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/moic.png" alt="Salaam Afghanistan logo" className={styles.logo} />
+              <img src="/logo.png" alt="Salaam Afghanistan logo" className={styles.brandLogo} />
+              <span className={styles.logoDivider} aria-hidden />
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/moic.png" alt="Ministry of Information and Culture" className={styles.logo} />
               <span className={styles.logoDivider} aria-hidden />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/raizing-logo.png" alt="Raizing Global" className={styles.raizingLogo} />

@@ -86,6 +86,13 @@
   border-radius: 50%;
 }
 
+.login-hero__logo--brand {
+  height: 44px;
+  width: auto;
+  max-width: 110px;
+  border-radius: 0;
+}
+
 .login-hero__logo--raizing {
   height: 32px;
   max-width: 120px;

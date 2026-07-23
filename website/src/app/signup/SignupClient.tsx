@@ -102,7 +102,13 @@ export function SignupClient() {
     <div className={styles.authPage}>
       <div className={styles.authCard}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/moic.png" alt="Salaam Afghanistan" className={styles.logo} />
+        <div className={styles.logoPair}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Salaam Afghanistan" className={styles.brandLogo} />
+          <span className={styles.logoPairDivider} aria-hidden />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/moic.png" alt="Ministry of Information and Culture" className={styles.logo} />
+        </div>
 
         <h1 className={styles.heading}>Create Account</h1>
         <p className={styles.subtitle}>Sign up to start your visa application</p>

@@ -32,6 +32,13 @@
   border-radius: 50%;
 }
 
+.brandLogo {
+  height: 52px;
+  width: auto;
+  max-width: 140px;
+  object-fit: contain;
+}
+
 .logoDivider {
   display: block;
   width: 1px;

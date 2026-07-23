@@ -142,11 +142,18 @@ export function Header() {
         </ul>
 
         <div className={styles.navRight}>
-          <Link href="/" className={styles.partnerLogoLink}>
+          <Link href="/" className={styles.partnerLogoLink} aria-label="Salaam Afghanistan home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/logo.png"
+              alt="Salaam Afghanistan"
+              className={styles.partnerBrandLogo}
+            />
+            <span className={styles.partnerLogoDivider} aria-hidden />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/moic.png"
-              alt="Salaam Afghanistan"
+              alt="Ministry of Information and Culture"
               className={styles.partnerLogo}
             />
           </Link>
@@ -181,7 +188,10 @@ export function Header() {
             <img src="/raizing-logo.png" alt="Raizing Global" className={styles.offcanvasRaizing} />
             <span className={styles.logoDivider} aria-hidden />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/moic.png" alt="Salaam Afghanistan" className={styles.offcanvasPartner} />
+            <img src="/logo.png" alt="Salaam Afghanistan" className={styles.offcanvasBrand} />
+            <span className={styles.logoDivider} aria-hidden />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/moic.png" alt="Ministry of Information and Culture" className={styles.offcanvasPartner} />
           </div>
           <ul className={styles.offcanvasNav}>
             {NAV_LINKS.map((link) => (

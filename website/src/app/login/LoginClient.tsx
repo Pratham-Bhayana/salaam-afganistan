@@ -90,7 +90,13 @@ export function LoginClient() {
     <div className={styles.authPage}>
       <div className={styles.authCard}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/moic.png" alt="Salaam Afghanistan" className={styles.logo} />
+        <div className={styles.logoPair}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt="Salaam Afghanistan" className={styles.brandLogo} />
+          <span className={styles.logoPairDivider} aria-hidden />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/moic.png" alt="Ministry of Information and Culture" className={styles.logo} />
+        </div>
 
         <h1 className={styles.heading}>Welcome Back</h1>
         <p className={styles.subtitle}>Sign in to continue your visa application</p>

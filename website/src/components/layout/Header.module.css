@@ -132,11 +132,29 @@
   flex-shrink: 0;
 }
 
-/* Partner logo — right side of navbar */
+/* Partner logos — right side of navbar (Salaam + MOIC) */
 .partnerLogoLink {
   display: inline-flex;
   align-items: center;
+  gap: 0.65rem;
   line-height: 0;
+  flex-shrink: 0;
+}
+
+.partnerBrandLogo {
+  display: block;
+  height: 42px;
+  width: auto;
+  max-width: 110px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.partnerLogoDivider {
+  display: block;
+  width: 1px;
+  height: 28px;
+  background: var(--color-gray-300);
   flex-shrink: 0;
 }
 
@@ -243,6 +261,13 @@
   object-fit: contain;
 }
 
+.offcanvasBrand {
+  height: 40px;
+  width: auto;
+  max-width: 100px;
+  object-fit: contain;
+}
+
 .offcanvasPartner {
   height: 48px;
   width: 48px;
@@ -301,6 +326,11 @@
     max-width: 140px;
   }
 
+  .partnerBrandLogo {
+    height: 48px;
+    max-width: 130px;
+  }
+
   .partnerLogo {
     height: 56px;
     width: 56px;
@@ -338,6 +368,11 @@
   .raizingLogo {
     height: 48px;
     max-width: 150px;
+  }
+
+  .partnerBrandLogo {
+    height: 52px;
+    max-width: 140px;
   }
 
   .partnerLogo {

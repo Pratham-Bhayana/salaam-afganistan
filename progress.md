@@ -1,6 +1,6 @@
 # Salaam Afghanistan — Progress Log
 
-**Last updated:** 23 July 2026 (Leadership section: Sheikh Shir Ahmad Haqqani + Message of Minister)  
+**Last updated:** 23 July 2026 (show logo.png + moic.png together everywhere)  
 **Rule:** Keep this file updated after every backend (and later frontend) development chunk.
 
 ---
