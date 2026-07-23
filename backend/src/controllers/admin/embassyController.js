@@ -1,11 +1,11 @@
 const Embassy = require('../../models/Embassy');
+const EmbassyRefreshToken = require('../../models/EmbassyRefreshToken');
 const Application = require('../../models/Application');
 const ChatRoom = require('../../models/ChatRoom');
 const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { parsePagination, escapeRegex } = require('../../utils/helpers');
 const { auditFromReq } = require('../../services/auditService');
 const { APPLICATION_STATUSES } = require('../../config/statusWorkflow');
-
 const list = asyncHandler(async (req, res) => {
   const { page, limit, skip } = parsePagination(req.query);
   const filter = {};
@@ -43,9 +43,23 @@ const getById = asyncHandler(async (req, res) => {
 });
 
 const create = asyncHandler(async (req, res) => {
+  const loginEmail = String(req.body.loginEmail || '').trim().toLowerCase();
+  const loginPassword = String(req.body.loginPassword || '');
+
+  if (!loginEmail) {
+    throw new ApiError(400, 'Login email is required');
+  }
+  if (loginPassword.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters');
+  }
+
+  const passwordHash = await Embassy.hashPassword(loginPassword);
+
   const embassy = await Embassy.create({
     code: String(req.body.code).toUpperCase(),
     name: req.body.name,
+    email: loginEmail,
+    passwordHash,
     logoUrl: req.body.logoUrl,
     branding: req.body.branding,
     contact: req.body.contact,
@@ -140,6 +154,37 @@ const remove = asyncHandler(async (req, res) => {
   return success(res, { deleted: true, id: embassy._id });
 });
 
+const resetPassword = asyncHandler(async (req, res) => {
+  const newPassword = String(req.body.newPassword || '');
+  if (newPassword.length < 8) {
+    throw new ApiError(400, 'Password must be at least 8 characters');
+  }
+
+  const embassy = await Embassy.findById(req.params.id).select('+passwordHash');
+  if (!embassy) throw new ApiError(404, 'Embassy not found');
+  if (!embassy.email) {
+    throw new ApiError(404, 'No admin account found for this embassy');
+  }
+
+  embassy.passwordHash = await Embassy.hashPassword(newPassword);
+  embassy.passwordResetTokenHash = undefined;
+  embassy.passwordResetExpiresAt = undefined;
+  await embassy.save();
+
+  await EmbassyRefreshToken.updateMany(
+    { embassyStaff: embassy._id, revokedAt: null },
+    { $set: { revokedAt: new Date() } }
+  );
+
+  await auditFromReq(req, {
+    action: 'embassy.reset_password',
+    resourceType: 'Embassy',
+    resourceId: embassy._id,
+    meta: { email: embassy.email },
+  });
+
+  return res.status(200).json({ success: true });
+});
 module.exports = {
   list,
   getById,
@@ -147,4 +192,5 @@ module.exports = {
   update,
   remove,
   applicationsForEmbassy,
+  resetPassword,
 };

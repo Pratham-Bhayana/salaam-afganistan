@@ -20,6 +20,7 @@ const issuedVisaController = require('../../controllers/admin/issuedVisaControll
 const recordsController = require('../../controllers/admin/recordsController');
 const dashboardController = require('../../controllers/admin/dashboardController');
 const embassyActivityController = require('../../controllers/admin/embassyActivityController');
+const notificationController = require('../../controllers/admin/notificationController');
 const {
   visaTypes,
   eligibilityRules,
@@ -116,6 +117,21 @@ router.patch(
   '/applications/:id',
   requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
   applicationController.update
+);
+router.patch(
+  '/applications/:id/applicant',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updateApplicant
+);
+router.patch(
+  '/applications/:id/passport',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updatePassport
+);
+router.patch(
+  '/applications/:id/travel',
+  requireAnyPermission(PERMISSIONS.APPLICATIONS_WRITE, PERMISSIONS.APPLICATIONS_INTAKE),
+  applicationController.updateTravel
 );
 router.post(
   '/applications/:id/status',
@@ -222,6 +238,11 @@ router.get('/embassies/:id', requireAnyPermission(PERMISSIONS.EMBASSY_SETUP, PER
 router.post('/embassies', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.create);
 router.patch('/embassies/:id', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.update);
 router.delete('/embassies/:id', requirePermission(PERMISSIONS.EMBASSY_SETUP), embassyController.remove);
+router.post(
+  '/embassies/:id/reset-password',
+  requirePermission(PERMISSIONS.EMBASSY_SETUP),
+  embassyController.resetPassword
+);
 router.get(
   '/embassies/:id/applications',
   requireAnyPermission(PERMISSIONS.EMBASSY_SETUP, PERMISSIONS.APPLICATIONS_READ),
@@ -242,6 +263,11 @@ router.post(
   validate,
   chatController.sendMessage
 );
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+router.get('/notifications', notificationController.list);
+router.post('/notifications/read-all', notificationController.markAllRead);
+router.post('/notifications/:id/read', notificationController.markRead);
 
 // ─── Website content + email templates (8.3) ─────────────────────────────────
 router.get('/content', requirePermission(PERMISSIONS.FEES_CONTENT_MANAGE), contentController.listContent);

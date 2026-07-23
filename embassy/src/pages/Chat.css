@@ -97,11 +97,18 @@
 .chat__room-list {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 10px 14px;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.chat__room-list::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .chat__empty {

@@ -16,6 +16,7 @@ const applicationController = require('../../controllers/embassy/applicationCont
 const chatController = require('../../controllers/embassy/chatController');
 const reportsController = require('../../controllers/embassy/reportsController');
 const recordsController = require('../../controllers/embassy/recordsController');
+const notificationController = require('../../controllers/embassy/notificationController');
 
 const router = express.Router();
 
@@ -174,6 +175,11 @@ router.post(
   validate,
   chatController.sendMessage
 );
+
+// ─── Notifications ───────────────────────────────────────────────────────────
+router.get('/notifications', notificationController.list);
+router.post('/notifications/read-all', notificationController.markAllRead);
+router.post('/notifications/:id/read', notificationController.markRead);
 
 // ─── Dashboard (live KPIs for all embassy staff) ─────────────────────────────
 router.get(

@@ -102,6 +102,47 @@ const createDraft = asyncHandler(async (req, res) => {
       undefined,
   };
 
+  // One active application per user: reuse existing draft instead of creating a duplicate
+  const existingDraft = await Application.findOne({
+    applicant: req.applicant._id,
+    status: APPLICATION_STATUSES.DRAFT,
+  });
+
+  if (existingDraft) {
+    existingDraft.visaTypeCode = visaType.code;
+    existingDraft.channel = visaType.channel;
+    existingDraft.personal = {
+      ...(existingDraft.personal?.toObject?.() || existingDraft.personal || {}),
+      ...personal,
+    };
+    if (req.body.passport) {
+      existingDraft.passport = {
+        ...(existingDraft.passport?.toObject?.() || existingDraft.passport || {}),
+        ...req.body.passport,
+      };
+    }
+    if (req.body.travel) {
+      existingDraft.travel = {
+        ...(existingDraft.travel?.toObject?.() || existingDraft.travel || {}),
+        ...req.body.travel,
+      };
+    }
+    if (req.body.formAnswers) {
+      existingDraft.formAnswers = req.body.formAnswers;
+    }
+    existingDraft.activity.push({
+      action: 'updated',
+      note: 'Draft updated on website (reused existing draft)',
+      actorType: 'applicant',
+      actorId: req.applicant._id,
+      actorName: personal.fullName || existingDraft.personal?.fullName || 'Applicant',
+      at: new Date(),
+    });
+    await existingDraft.save();
+    // Status stays draft; POST /applications/:id/submit sets pending + submittedAt
+    return success(res, existingDraft);
+  }
+
   const application = await Application.create({
     referenceId: generateReferenceId('SA'),
     applicant: req.applicant._id,

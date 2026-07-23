@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Eye, Plus, Search, Trash2 } from 'lucide-react';
 import { formatDate } from '../api/applications';
 import { deleteEmbassy, listEmbassies, type Embassy } from '../api/embassies';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import { Modal } from '../components/Modal';
 import './Embassies.css';
 
@@ -13,6 +14,8 @@ type ActiveFilter = 'all' | 'active' | 'inactive';
 
 export function Embassies() {
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'embassy:setup');
   const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>('all');
@@ -92,6 +95,8 @@ export function Embassies() {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
   const showDeleteAction = activeFilter === 'inactive';
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   return (
     <div className="embassies">

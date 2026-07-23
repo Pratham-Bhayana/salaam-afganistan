@@ -20,6 +20,8 @@ type Props = {
   warnings: string[];
   confidence: "high" | "medium" | "low";
   scanning: boolean;
+  /** When false, fields stay locked until OCR succeeds or manual fallback unlocks them. */
+  allowManualEdit?: boolean;
   onChange: (key: keyof PassportOcrFields, value: string) => void;
   onRescan: () => void;
 };
@@ -29,9 +31,12 @@ export function PassportOcrPreview({
   warnings,
   confidence,
   scanning,
+  allowManualEdit = true,
   onChange,
   onRescan,
 }: Props) {
+  const fieldsDisabled = scanning || !allowManualEdit;
+
   return (
     <div className={styles.ocrPreview}>
       <div className={styles.ocrPreviewHead}>
@@ -68,7 +73,7 @@ export function PassportOcrPreview({
             type="text"
             className={styles.input}
             value={fields.fullName}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("fullName", e.target.value)}
           />
         </label>
@@ -79,7 +84,7 @@ export function PassportOcrPreview({
             type="text"
             className={styles.input}
             value={fields.passportNumber}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("passportNumber", e.target.value)}
           />
         </label>
@@ -89,7 +94,7 @@ export function PassportOcrPreview({
           <select
             className={styles.input}
             value={fields.nationality}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("nationality", e.target.value)}
           >
             <option value="">Select…</option>
@@ -106,7 +111,7 @@ export function PassportOcrPreview({
           <select
             className={styles.input}
             value={fields.passportIssuingCountry}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("passportIssuingCountry", e.target.value)}
           >
             <option value="">Select…</option>
@@ -124,7 +129,7 @@ export function PassportOcrPreview({
             type="date"
             className={styles.input}
             value={fields.dateOfBirth}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("dateOfBirth", e.target.value)}
           />
         </label>
@@ -135,7 +140,7 @@ export function PassportOcrPreview({
             type="date"
             className={styles.input}
             value={fields.passportIssueDate}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("passportIssueDate", e.target.value)}
           />
         </label>
@@ -146,7 +151,7 @@ export function PassportOcrPreview({
             type="date"
             className={styles.input}
             value={fields.passportExpiryDate}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("passportExpiryDate", e.target.value)}
           />
         </label>
@@ -156,7 +161,7 @@ export function PassportOcrPreview({
           <select
             className={styles.input}
             value={fields.sex}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("sex", e.target.value)}
           >
             <option value="">Select…</option>
@@ -172,7 +177,7 @@ export function PassportOcrPreview({
             type="text"
             className={styles.input}
             value={fields.placeOfBirth}
-            disabled={scanning}
+            disabled={fieldsDisabled}
             onChange={(e) => onChange("placeOfBirth", e.target.value)}
           />
         </label>

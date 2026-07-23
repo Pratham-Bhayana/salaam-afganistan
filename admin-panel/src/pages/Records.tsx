@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Download, Eye, Search } from 'lucide-react';
 import {
   decisionLabel,
@@ -9,13 +9,16 @@ import {
   type DecisionRecord,
   type RecordsQuery,
 } from '../api/records';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
 import '../components/DataTable.css';
 import './Records.css';
 
 type Period = RecordsQuery['period'];
 
 export function Records() {
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'records:export');
   const [period, setPeriod] = useState<Period>('all');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -99,6 +102,8 @@ export function Records() {
   const maxPage = Math.max(1, Math.ceil(total / pageSize));
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
+
+  if (!canAccess) return <Navigate to="/" replace />;
 
   return (
     <div className="applications records-page">

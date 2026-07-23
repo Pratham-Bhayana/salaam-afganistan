@@ -1,7 +1,7 @@
 const { body } = require('express-validator');
 const authService = require('../../services/authService');
 const { asyncHandler, success } = require('../../middleware/error');
-const { getPermissionsForRole } = require('../../config/permissions');
+const { getEffectivePermissions } = require('../../config/permissions');
 
 const loginValidators = [
   body('email').isEmail().withMessage('Valid email required'),
@@ -33,7 +33,7 @@ const logout = asyncHandler(async (req, res) => {
 const me = asyncHandler(async (req, res) => {
   return success(res, {
     staff: req.staff.toJSON(),
-    permissions: getPermissionsForRole(req.staff.role),
+    permissions: getEffectivePermissions(req.staff.role, req.staff.sectionOverrides),
   });
 });
 

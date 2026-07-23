@@ -71,43 +71,43 @@ async function clearConfigCollections() {
   console.log('Cleared existing visa config collections (--fresh).');
 }
 
-async function seedAdminBootstrap() {
-  const passwordHash = await Staff.hashPassword(defaultSuperAdmin.password);
-  const admin = await Staff.findOneAndUpdate(
-    { email: defaultSuperAdmin.email.toLowerCase() },
-    {
-      $set: {
-        firstName: defaultSuperAdmin.firstName,
-        lastName: defaultSuperAdmin.lastName,
-        role: defaultSuperAdmin.role,
-        isActive: true,
-        passwordHash,
-      },
-      $setOnInsert: {
-        email: defaultSuperAdmin.email.toLowerCase(),
-      },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+async function ensureStaffAccount({ email, password, fields }) {
+  const normalizedEmail = email.toLowerCase();
+  const existing = await Staff.findOne({ email: normalizedEmail });
+  if (existing) {
+    return existing;
+  }
 
-  const receptionPasswordHash = await Staff.hashPassword(defaultReceptionist.password);
-  const receptionist = await Staff.findOneAndUpdate(
-    { email: defaultReceptionist.email.toLowerCase() },
-    {
-      $set: {
-        firstName: defaultReceptionist.firstName,
-        lastName: defaultReceptionist.lastName,
-        role: defaultReceptionist.role,
-        designation: defaultReceptionist.designation,
-        isActive: true,
-        passwordHash: receptionPasswordHash,
-      },
-      $setOnInsert: {
-        email: defaultReceptionist.email.toLowerCase(),
-      },
+  const passwordHash = await Staff.hashPassword(password);
+  return Staff.create({
+    email: normalizedEmail,
+    passwordHash,
+    isActive: true,
+    ...fields,
+  });
+}
+
+async function seedAdminBootstrap() {
+  const admin = await ensureStaffAccount({
+    email: defaultSuperAdmin.email,
+    password: defaultSuperAdmin.password,
+    fields: {
+      firstName: defaultSuperAdmin.firstName,
+      lastName: defaultSuperAdmin.lastName,
+      role: defaultSuperAdmin.role,
     },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  });
+
+  const receptionist = await ensureStaffAccount({
+    email: defaultReceptionist.email,
+    password: defaultReceptionist.password,
+    fields: {
+      firstName: defaultReceptionist.firstName,
+      lastName: defaultReceptionist.lastName,
+      role: defaultReceptionist.role,
+      designation: defaultReceptionist.designation,
+    },
+  });
 
   await PlatformSettings.findOneAndUpdate(
     { key: 'default' },
@@ -162,11 +162,23 @@ async function ensureEmbassyGeneralRoom(embassy) {
 }
 
 async function seedEmbassyBootstrap() {
+  const demoPassword = 'Demo@1234';
+  const dxbLoginEmail = 'dubai@salaam.local';
+  const kblLoginEmail = 'kabul@salaam.local';
+
+  const existingDxb = await Embassy.findOne({ code: 'DXB' }).select('email');
+  const dxbCredentialUpdate = {};
+  if (!existingDxb?.email) {
+    dxbCredentialUpdate.email = dxbLoginEmail;
+    dxbCredentialUpdate.passwordHash = await Embassy.hashPassword(demoPassword);
+  }
+
   const embassy = await Embassy.findOneAndUpdate(
     { code: 'DXB' },
     {
       $set: {
         name: 'Dubai Consulate',
+        ...dxbCredentialUpdate,
         contact: {
           email: 'dubai@mfa.local',
           city: 'Dubai',
@@ -188,11 +200,19 @@ async function seedEmbassyBootstrap() {
 
   await ensureEmbassyGeneralRoom(embassy);
 
+  const existingKbl = await Embassy.findOne({ code: 'KBL' }).select('email');
+  const kblCredentialUpdate = {};
+  if (!existingKbl?.email) {
+    kblCredentialUpdate.email = kblLoginEmail;
+    kblCredentialUpdate.passwordHash = await Embassy.hashPassword(demoPassword);
+  }
+
   const kbl = await Embassy.findOneAndUpdate(
     { code: 'KBL' },
     {
       $set: {
         name: 'Kabul Visa Office',
+        ...kblCredentialUpdate,
         contact: {
           email: 'kabul@mfa.local',
           city: 'Kabul',
@@ -214,45 +234,9 @@ async function seedEmbassyBootstrap() {
 
   await ensureEmbassyGeneralRoom(kbl);
 
-  const email = process.env.SEED_EMBASSY_EMAIL || 'demoembassy@afghanistan.com';
-  const password = process.env.SEED_EMBASSY_PASSWORD || 'Demo@1234';
-  const passwordHash = await EmbassyStaff.hashPassword(password);
+  const password = process.env.SEED_EMBASSY_PASSWORD || 'ChangeMeNow!123';
 
-  const embassyAdmin = await EmbassyStaff.findOneAndUpdate(
-    { email: email.toLowerCase() },
-    {
-      $set: {
-        embassy: embassy._id,
-        firstName: 'Embassy',
-        lastName: 'Admin',
-        role: EMBASSY_ROLES.EMBASSY_ADMIN,
-        accessMode: 'all',
-        isActive: true,
-        passwordHash,
-      },
-      $setOnInsert: { email: email.toLowerCase() },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
-
-  const kblEmail = process.env.SEED_EMBASSY_KBL_EMAIL || 'embassy.kabul@salaam.local';
-  const kblPasswordHash = await EmbassyStaff.hashPassword(password);
-  const kblAdmin = await EmbassyStaff.findOneAndUpdate(
-    { email: kblEmail.toLowerCase() },
-    {
-      $set: {
-        embassy: kbl._id,
-        firstName: 'Kabul',
-        lastName: 'Admin',
-        role: EMBASSY_ROLES.EMBASSY_ADMIN,
-        accessMode: 'all',
-        isActive: true,
-        passwordHash: kblPasswordHash,
-      },
-      $setOnInsert: { email: kblEmail.toLowerCase() },
-    },
-    { upsert: true, new: true, setDefaultsOnInsert: true }
-  );
+  await EmbassyStaff.deleteMany({ role: EMBASSY_ROLES.EMBASSY_ADMIN });
 
   const staffEmail = process.env.SEED_EMBASSY_STAFF_EMAIL || 'embassy.staff@salaam.local';
   const staffPasswordHash = await EmbassyStaff.hashPassword(password);
@@ -267,7 +251,6 @@ async function seedEmbassyBootstrap() {
         accessMode: 'all',
         isActive: true,
         passwordHash: staffPasswordHash,
-        createdByEmbassyStaff: embassyAdmin._id,
       },
       $setOnInsert: { email: staffEmail.toLowerCase() },
     },
@@ -277,10 +260,10 @@ async function seedEmbassyBootstrap() {
   return {
     embassyCode: embassy.code,
     embassyId: embassy._id,
-    embassyAdminEmail: embassyAdmin.email,
+    embassyAdminEmail: embassy.email,
     embassyStaffEmail: embassyStaff.email,
     peerEmbassyCode: kbl.code,
-    peerEmbassyAdminEmail: kblAdmin.email,
+    peerEmbassyAdminEmail: kbl.email,
   };
 }
 
@@ -332,11 +315,13 @@ async function seed() {
   console.log('Upserted config:', counts);
   console.log('Admin bootstrap:', {
     ...bootstrap,
-    defaultPasswordHint: process.env.SEED_ADMIN_PASSWORD ? '(from SEED_ADMIN_PASSWORD)' : 'ChangeMeNow!123',
+    seededAdminEmail: defaultSuperAdmin.email,
+    seededAdminPassword: defaultSuperAdmin.password,
+    note: 'Existing staff accounts are never modified by seed',
   });
   console.log('Embassy bootstrap:', {
     ...embassyBootstrap,
-    defaultPasswordHint: process.env.SEED_EMBASSY_PASSWORD ? '(from SEED_EMBASSY_PASSWORD)' : 'Demo@1234',
+    defaultPasswordHint: process.env.SEED_EMBASSY_PASSWORD ? '(from SEED_EMBASSY_PASSWORD)' : 'ChangeMeNow!123',
   });
 }
 

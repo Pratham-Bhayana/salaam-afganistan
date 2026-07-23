@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -13,6 +14,10 @@ import {
   loginAdmin,
   type StaffSession,
 } from './client';
+
+const INACTIVITY_WARNING_MS = 55 * 60 * 1000;
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000;
+const ACTIVITY_EVENTS = ['mousemove', 'click', 'keypress'] as const;
 
 type AuthContextValue = {
   staff: StaffSession | null;
@@ -39,6 +44,48 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStaff(null);
     setAuthenticated(false);
   }, []);
+
+  useEffect(() => {
+    if (!authenticated) return;
+
+    let warningTimeoutId: ReturnType<typeof setTimeout> | undefined;
+    let logoutTimeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const clearTimers = () => {
+      if (warningTimeoutId !== undefined) clearTimeout(warningTimeoutId);
+      if (logoutTimeoutId !== undefined) clearTimeout(logoutTimeoutId);
+      warningTimeoutId = undefined;
+      logoutTimeoutId = undefined;
+    };
+
+    const startTimers = () => {
+      clearTimers();
+      warningTimeoutId = setTimeout(() => {
+        window.alert('Session expiring in 5 minutes');
+      }, INACTIVITY_WARNING_MS);
+      logoutTimeoutId = setTimeout(() => {
+        clearTimers();
+        logout();
+        window.location.href = '/login';
+      }, INACTIVITY_TIMEOUT_MS);
+    };
+
+    const onActivity = () => {
+      startTimers();
+    };
+
+    for (const event of ACTIVITY_EVENTS) {
+      window.addEventListener(event, onActivity);
+    }
+    startTimers();
+
+    return () => {
+      clearTimers();
+      for (const event of ACTIVITY_EVENTS) {
+        window.removeEventListener(event, onActivity);
+      }
+    };
+  }, [authenticated, logout]);
 
   const value = useMemo(
     () => ({ staff, authenticated, login, logout }),

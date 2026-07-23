@@ -1,15 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Eye, EyeOff } from 'lucide-react';
 import {
   createEmbassy,
   getEmbassy,
   listVisaTypesForPicker,
+  resetEmbassyPassword,
   updateEmbassy,
   type CreateEmbassyInput,
   type Embassy,
   type VisaTypeOption,
 } from '../api/embassies';
-import { ApiError } from '../api/client';
+import { ApiError, staffHasPermission } from '../api/client';
+import { useAuth } from '../api/AuthContext';
+import { Modal } from '../components/Modal';
+import '../components/Modal.css';
 import './EmbassyForm.css';
 
 type Mode = 'create' | 'edit';
@@ -29,9 +34,14 @@ type FormState = {
   primaryColor: string;
   secondaryColor: string;
   notes: string;
+  loginEmail: string;
+  loginPassword: string;
+  loginPasswordConfirm: string;
 };
 
-type FieldErrors = Partial<Record<'code' | 'name' | 'email', string>>;
+type FieldErrors = Partial<
+  Record<'code' | 'name' | 'email' | 'loginEmail' | 'loginPassword' | 'loginPasswordConfirm', string>
+>;
 
 const EMPTY: FormState = {
   code: '',
@@ -48,6 +58,9 @@ const EMPTY: FormState = {
   primaryColor: '#0B3D2E',
   secondaryColor: '#C4A35A',
   notes: '',
+  loginEmail: '',
+  loginPassword: '',
+  loginPasswordConfirm: '',
 };
 
 function fromEmbassy(embassy: Embassy): FormState {
@@ -66,6 +79,9 @@ function fromEmbassy(embassy: Embassy): FormState {
     primaryColor: embassy.branding?.primaryColor || '#0B3D2E',
     secondaryColor: embassy.branding?.secondaryColor || '#C4A35A',
     notes: embassy.notes || '',
+    loginEmail: '',
+    loginPassword: '',
+    loginPasswordConfirm: '',
   };
 }
 
@@ -75,6 +91,23 @@ function validate(form: FormState, mode: Mode): FieldErrors {
   if (!form.name.trim()) errors.name = 'Name is required';
   if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
     errors.email = 'Enter a valid email';
+  }
+  if (mode === 'create') {
+    if (!form.loginEmail.trim()) {
+      errors.loginEmail = 'Login email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.loginEmail.trim())) {
+      errors.loginEmail = 'Enter a valid login email';
+    }
+    if (!form.loginPassword) {
+      errors.loginPassword = 'Password is required';
+    } else if (form.loginPassword.length < 8) {
+      errors.loginPassword = 'Password must be at least 8 characters';
+    }
+    if (!form.loginPasswordConfirm) {
+      errors.loginPasswordConfirm = 'Confirm password is required';
+    } else if (form.loginPassword !== form.loginPasswordConfirm) {
+      errors.loginPasswordConfirm = 'Passwords do not match';
+    }
   }
   return errors;
 }
@@ -100,7 +133,12 @@ function buildPayload(form: FormState, mode: Mode): CreateEmbassyInput | Omit<Cr
     notes: form.notes.trim() || undefined,
   };
   if (mode === 'create') {
-    return { ...base, code: form.code.trim().toUpperCase() };
+    return {
+      ...base,
+      code: form.code.trim().toUpperCase(),
+      loginEmail: form.loginEmail.trim().toLowerCase(),
+      loginPassword: form.loginPassword,
+    } as CreateEmbassyInput;
   }
   return base;
 }
@@ -108,6 +146,8 @@ function buildPayload(form: FormState, mode: Mode): CreateEmbassyInput | Omit<Cr
 export function EmbassyForm({ mode }: { mode: Mode }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { staff } = useAuth();
+  const canAccess = staffHasPermission(staff, 'embassy:setup');
   const [form, setForm] = useState<FormState>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [apiError, setApiError] = useState('');
@@ -116,6 +156,16 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
   const [visaTypes, setVisaTypes] = useState<VisaTypeOption[]>([]);
   const [countryDraft, setCountryDraft] = useState('');
   const [brandingOpen, setBrandingOpen] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+  const [resetPasswordValue, setResetPasswordValue] = useState('');
+  const [resetConfirmValue, setResetConfirmValue] = useState('');
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showLoginPasswordConfirm, setShowLoginPasswordConfirm] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -205,6 +255,60 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
     }
   }
 
+  function openResetModal() {
+    setResetError('');
+    setResetPasswordValue('');
+    setResetConfirmValue('');
+    setShowResetPassword(false);
+    setShowResetConfirm(false);
+    setResetOpen(true);
+  }
+
+  function closeResetModal() {
+    if (resetting) return;
+    setResetOpen(false);
+    setResetError('');
+    setResetPasswordValue('');
+    setResetConfirmValue('');
+    setShowResetPassword(false);
+    setShowResetConfirm(false);
+  }
+
+  async function onSubmitResetPassword(e: FormEvent) {
+    e.preventDefault();
+    if (!id) return;
+
+    const password = resetPasswordValue;
+    const confirm = resetConfirmValue;
+    if (password.length < 8) {
+      setResetError('Password must be at least 8 characters');
+      return;
+    }
+    if (password !== confirm) {
+      setResetError('Passwords do not match');
+      return;
+    }
+
+    setResetting(true);
+    setResetError('');
+    try {
+      await resetEmbassyPassword(id, password);
+      setResetOpen(false);
+      setResetPasswordValue('');
+      setResetConfirmValue('');
+      setShowResetPassword(false);
+      setShowResetConfirm(false);
+      setResetError('');
+      setResetSuccess('Password updated successfully');
+    } catch (err) {
+      setResetError(err instanceof ApiError ? err.message : 'Failed to reset password');
+    } finally {
+      setResetting(false);
+    }
+  }
+
+  if (!canAccess) return <Navigate to="/" replace />;
+
   if (loading) {
     return (
       <div className="embassy-form">
@@ -214,6 +318,7 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
   }
 
   return (
+    <>
     <form className="embassy-form" onSubmit={(e) => void onSubmit(e)} noValidate>
       <nav className="embassy-form__crumbs" aria-label="Breadcrumb">
         <Link to="/embassies">Embassies</Link>
@@ -231,6 +336,14 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
       </p>
 
       {apiError ? <div className="embassy-form__banner">{apiError}</div> : null}
+      {resetSuccess ? (
+        <div
+          className="embassy-form__banner"
+          style={{ background: 'rgba(11, 61, 46, 0.1)', color: 'var(--brand)' }}
+        >
+          {resetSuccess}
+        </div>
+      ) : null}
 
       <section className="embassy-form__section">
         <h2>Identity</h2>
@@ -457,6 +570,108 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
         </label>
       </section>
 
+      {mode === 'create' ? (
+        <section className="embassy-form__section">
+          <h2>Login Credentials</h2>
+          <p>Required for embassy panel login. Password must be at least 8 characters.</p>
+          <div className="embassy-form__grid">
+            <label className="embassy-form__field">
+              Login email
+              <input
+                type="email"
+                value={form.loginEmail}
+                onChange={(e) => setField('loginEmail', e.target.value)}
+                placeholder="dubai@salaam.local"
+                autoComplete="off"
+                required
+              />
+              {fieldErrors.loginEmail ? (
+                <span className="embassy-form__error">{fieldErrors.loginEmail}</span>
+              ) : null}
+            </label>
+            <div />
+            <label className="embassy-form__field">
+              Password
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showLoginPassword ? 'text' : 'password'}
+                  value={form.loginPassword}
+                  onChange={(e) => setField('loginPassword', e.target.value)}
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                  style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPassword((v) => !v)}
+                  aria-label={showLoginPassword ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: 10,
+                    transform: 'translateY(-50%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 36,
+                    height: 36,
+                    border: 'none',
+                    borderRadius: 10,
+                    background: 'transparent',
+                    color: 'var(--ink-muted)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {fieldErrors.loginPassword ? (
+                <span className="embassy-form__error">{fieldErrors.loginPassword}</span>
+              ) : null}
+            </label>
+            <label className="embassy-form__field">
+              Confirm password
+              <div style={{ position: 'relative' }}>
+                <input
+                  type={showLoginPasswordConfirm ? 'text' : 'password'}
+                  value={form.loginPasswordConfirm}
+                  onChange={(e) => setField('loginPasswordConfirm', e.target.value)}
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
+                  style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowLoginPasswordConfirm((v) => !v)}
+                  aria-label={showLoginPasswordConfirm ? 'Hide password' : 'Show password'}
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    right: 10,
+                    transform: 'translateY(-50%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 36,
+                    height: 36,
+                    border: 'none',
+                    borderRadius: 10,
+                    background: 'transparent',
+                    color: 'var(--ink-muted)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {showLoginPasswordConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {fieldErrors.loginPasswordConfirm ? (
+                <span className="embassy-form__error">{fieldErrors.loginPasswordConfirm}</span>
+              ) : null}
+            </label>
+          </div>
+        </section>
+      ) : null}
+
       <div className="embassy-form__actions">
         <Link to={mode === 'edit' && id ? `/embassies/${id}` : '/embassies'} className="is-ghost">
           Cancel
@@ -465,6 +680,138 @@ export function EmbassyForm({ mode }: { mode: Mode }) {
           {saving ? 'Saving…' : mode === 'create' ? 'Create embassy' : 'Save changes'}
         </button>
       </div>
+
+      {mode === 'edit' ? (
+        <section
+          aria-labelledby="embassy-security-heading"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+            marginTop: 8,
+            padding: 16,
+            border: '1px solid rgba(179, 58, 58, 0.22)',
+            borderRadius: 12,
+            background: 'rgba(179, 58, 58, 0.05)',
+          }}
+        >
+          <h2 id="embassy-security-heading" style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#8f2a2a' }}>
+            Security
+          </h2>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--ink-muted)', lineHeight: 1.45 }}>
+            Set a new login password for this embassy admin account.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setResetSuccess('');
+              openResetModal();
+            }}
+            style={{
+              alignSelf: 'flex-start',
+              height: 38,
+              padding: '0 14px',
+              borderRadius: 10,
+              border: '1px solid rgba(179, 58, 58, 0.35)',
+              background: '#fff',
+              color: '#b33a3a',
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            Reset Password
+          </button>
+        </section>
+      ) : null}
     </form>
+
+    <Modal open={resetOpen} title="Reset password" onClose={closeResetModal}>
+      <form className="modal-form" onSubmit={(e) => void onSubmitResetPassword(e)}>
+        {resetError ? <div className="modal-form__error">{resetError}</div> : null}
+        <label>
+          New Password
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showResetPassword ? 'text' : 'password'}
+              value={resetPasswordValue}
+              onChange={(e) => setResetPasswordValue(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+              autoFocus
+              style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowResetPassword((v) => !v)}
+              aria-label={showResetPassword ? 'Hide password' : 'Show password'}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 10,
+                transform: 'translateY(-50%)',
+                display: 'grid',
+                placeItems: 'center',
+                width: 36,
+                height: 36,
+                border: 'none',
+                borderRadius: 10,
+                background: 'transparent',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              {showResetPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </label>
+        <label>
+          Confirm Password
+          <div style={{ position: 'relative' }}>
+            <input
+              type={showResetConfirm ? 'text' : 'password'}
+              value={resetConfirmValue}
+              onChange={(e) => setResetConfirmValue(e.target.value)}
+              autoComplete="new-password"
+              minLength={8}
+              required
+              style={{ paddingRight: 48, width: '100%', boxSizing: 'border-box' }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowResetConfirm((v) => !v)}
+              aria-label={showResetConfirm ? 'Hide password' : 'Show password'}
+              style={{
+                position: 'absolute',
+                top: '50%',
+                right: 10,
+                transform: 'translateY(-50%)',
+                display: 'grid',
+                placeItems: 'center',
+                width: 36,
+                height: 36,
+                border: 'none',
+                borderRadius: 10,
+                background: 'transparent',
+                color: 'var(--ink-muted)',
+                cursor: 'pointer',
+              }}
+            >
+              {showResetConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </label>
+        <div className="modal-form__actions">
+          <button type="button" className="is-ghost" disabled={resetting} onClick={closeResetModal}>
+            Cancel
+          </button>
+          <button type="submit" className="is-danger" disabled={resetting}>
+            {resetting ? 'Saving…' : 'Update Password'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+    </>
   );
 }

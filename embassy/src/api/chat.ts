@@ -92,6 +92,20 @@ export async function fetchChatUnread() {
   return apiFetch<{ totalUnread: number }>('/chat/unread');
 }
 
+export function applicationUnreadMap(rooms: ChatRoom[]): Record<string, number> {
+  const map: Record<string, number> = {};
+  for (const room of rooms) {
+    if (room.type !== 'application') continue;
+    const count = room.unreadCount || 0;
+    if (count <= 0) continue;
+    const app = typeof room.application === 'object' && room.application ? room.application : null;
+    const appId = app?._id || (typeof room.application === 'string' ? room.application : '');
+    if (!appId) continue;
+    map[appId] = (map[appId] || 0) + count;
+  }
+  return map;
+}
+
 export async function listChatRooms(params?: { type?: ChatRoomType; application?: string }) {
   const qs = new URLSearchParams();
   if (params?.type) qs.set('type', params.type);

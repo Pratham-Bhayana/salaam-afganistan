@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { PageHeader } from '../components/PageHeader';
 import { DataTable } from '../components/DataTable';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -10,6 +10,7 @@ import {
 } from '../api/applications';
 import { ApiError, staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
+import { useUnreadState } from '../layout/unreadStore';
 import './Applications.css';
 
 const POLL_MS = 8000;
@@ -17,6 +18,9 @@ const POLL_MS = 8000;
 export function Applications() {
   const navigate = useNavigate();
   const { staff } = useAuth();
+  const canAccess =
+    staffHasPermission(staff, 'applications:read') ||
+    staffHasPermission(staff, 'applications:intake');
   const canDelete = staffHasPermission(staff, 'applications:write');
   const [deleteTarget, setDeleteTarget] = useState<ApplicationListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -29,6 +33,7 @@ export function Applications() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [rows, setRows] = useState<ApplicationListItem[]>([]);
   const [total, setTotal] = useState(0);
+  const { applicationUnreadByAppId: chatUnreadByAppId } = useUnreadState();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -103,6 +108,8 @@ export function Applications() {
     }
   }
 
+  if (!canAccess) return <Navigate to="/" replace />;
+
   return (
     <div className="applications">
       <PageHeader
@@ -126,6 +133,7 @@ export function Applications() {
         onToggleAll={toggleAll}
         onViewRow={(id) => navigate(`/applications/${id}`)}
         onDeleteRow={canDelete ? (row) => setDeleteTarget(row) : undefined}
+        chatUnreadByAppId={chatUnreadByAppId}
         page={page}
         pageSize={pageSize}
         totalItems={total}

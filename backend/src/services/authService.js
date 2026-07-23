@@ -6,7 +6,7 @@ const {
   signRefreshToken,
   verifyRefreshToken,
 } = require('../middleware/auth');
-const { getPermissionsForRole } = require('../config/permissions');
+const { getEffectivePermissions } = require('../config/permissions');
 const { sha256, randomToken } = require('../utils/helpers');
 const { writeAudit } = require('./auditService');
 
@@ -36,7 +36,7 @@ async function issueSession(staff, meta = {}) {
     refreshToken,
     expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m',
     staff: staff.toJSON(),
-    permissions: getPermissionsForRole(staff.role),
+    permissions: getEffectivePermissions(staff.role, staff.sectionOverrides),
   };
 }
 

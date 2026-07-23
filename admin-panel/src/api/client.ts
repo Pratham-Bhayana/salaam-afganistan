@@ -133,6 +133,7 @@ async function refreshAccessToken(): Promise<boolean> {
     accessToken: string;
     refreshToken?: string;
     staff?: StaffSession;
+    permissions?: string[];
   }>;
 
   if (!json.success || !json.data?.accessToken) {
@@ -142,7 +143,13 @@ async function refreshAccessToken(): Promise<boolean> {
 
   localStorage.setItem(ACCESS_KEY, json.data.accessToken);
   if (json.data.refreshToken) localStorage.setItem(REFRESH_KEY, json.data.refreshToken);
-  if (json.data.staff) localStorage.setItem(STAFF_KEY, JSON.stringify(json.data.staff));
+  if (json.data.staff) {
+    const staff: StaffSession = {
+      ...json.data.staff,
+      permissions: json.data.permissions || json.data.staff.permissions,
+    };
+    localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+  }
   return true;
 }
 
@@ -241,6 +248,7 @@ export async function loginAdmin(email: string, password: string) {
       accessToken: string;
       refreshToken: string;
       staff: StaffSession;
+      permissions?: string[];
     };
   };
 
@@ -248,11 +256,16 @@ export async function loginAdmin(email: string, password: string) {
     throw new ApiError(res.status, json.message || 'Login failed');
   }
 
+  const staff: StaffSession = {
+    ...json.data.staff,
+    permissions: json.data.permissions || json.data.staff.permissions,
+  };
+
   persistSession({
     accessToken: json.data.accessToken,
     refreshToken: json.data.refreshToken,
-    staff: json.data.staff,
+    staff,
   });
 
-  return json.data.staff;
+  return staff;
 }

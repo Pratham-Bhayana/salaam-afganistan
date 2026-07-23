@@ -37,6 +37,7 @@ import { APPLYING_FROM_OPTIONS } from "@/data/home";
 import type { VisaChannel } from "@/types/apply";
 import {
   extractPassportFromImage,
+  isValidPassportOcrFields,
   ocrFieldsToFormValues,
   type PassportOcrFields,
 } from "@/lib/passportOcr";
@@ -71,6 +72,30 @@ const EMPTY_OCR_FIELDS: PassportOcrFields = {
   documentCode: "",
   rawMrz: [],
 };
+
+const OCR_TIMEOUT_MS = 30_000;
+const OCR_MAX_ATTEMPTS = 3;
+const OCR_TIMEOUT_MESSAGE = "Scan timed out. Please re-upload or fill manually.";
+const OCR_INVALID_PASSPORT_MESSAGE =
+  "Could not detect a valid passport. Please re-upload a clear passport bio page.";
+const OCR_MANUAL_FALLBACK_MESSAGE =
+  "Could not read passport automatically. Please fill in your details manually.";
+
+function withOcrTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error(message)), ms);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        window.clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
+}
 
 /** Same country options as personal info (FormFields) + eligibility list coverage */
 const COUNTRY_OPTIONS = [
@@ -130,6 +155,10 @@ export function ApplyFlow() {
   const [ocrWarnings, setOcrWarnings] = useState<string[]>([]);
   const [ocrConfidence, setOcrConfidence] = useState<"high" | "medium" | "low">("low");
   const [ocrError, setOcrError] = useState("");
+  const [ocrAttemptCount, setOcrAttemptCount] = useState(0);
+  const [ocrSucceeded, setOcrSucceeded] = useState(false);
+  const [ocrManualMode, setOcrManualMode] = useState(false);
+  const ocrAttemptCountRef = useRef(0);
 
   const [eligibilityOpen, setEligibilityOpen] = useState(false);
   const [modalNationality, setModalNationality] = useState("");
@@ -249,20 +278,49 @@ export function ApplyFlow() {
     setOcrScanning(true);
     setOcrError("");
     setOcrReady(false);
-    try {
-      const result = await extractPassportFromImage(file);
-      setOcrFields(result.fields);
-      setOcrWarnings(result.warnings);
-      setOcrConfidence(result.confidence);
-      setOcrReady(true);
-    } catch (err) {
+    setOcrSucceeded(false);
+
+    const recordFailedAttempt = (message: string) => {
+      ocrAttemptCountRef.current += 1;
+      const next = ocrAttemptCountRef.current;
+      setOcrAttemptCount(next);
       setOcrFields(EMPTY_OCR_FIELDS);
       setOcrWarnings([]);
       setOcrConfidence("low");
-      setOcrError(
-        err instanceof Error ? err.message : "OCR failed. You can still edit fields manually.",
+      setOcrSucceeded(false);
+      if (next >= OCR_MAX_ATTEMPTS) {
+        setOcrManualMode(true);
+        setOcrError(OCR_MANUAL_FALLBACK_MESSAGE);
+        setOcrReady(true);
+      } else {
+        setOcrError(message);
+        setOcrReady(false);
+      }
+    };
+
+    try {
+      const result = await withOcrTimeout(
+        extractPassportFromImage(file),
+        OCR_TIMEOUT_MS,
+        OCR_TIMEOUT_MESSAGE,
       );
+
+      if (!isValidPassportOcrFields(result.fields)) {
+        recordFailedAttempt(OCR_INVALID_PASSPORT_MESSAGE);
+        return;
+      }
+
+      setOcrFields(result.fields);
+      setOcrWarnings(result.warnings);
+      setOcrConfidence(result.confidence);
+      setOcrSucceeded(true);
       setOcrReady(true);
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message
+          ? err.message
+          : "OCR failed. You can still edit fields manually.";
+      recordFailedAttempt(message);
     } finally {
       setOcrScanning(false);
     }
@@ -272,6 +330,7 @@ export function ApplyFlow() {
     setFile("passportBioScan", file);
     setPassportBioFile(file);
     setOcrReady(false);
+    setOcrSucceeded(false);
     setOcrFields(EMPTY_OCR_FIELDS);
     setOcrWarnings([]);
     setOcrError("");
@@ -290,7 +349,8 @@ export function ApplyFlow() {
   }
 
   const passportUploaded = Boolean(fileNames.passportBioScan && fileNames.passportPhoto);
-  const canLeavePassportStep = passportUploaded && !ocrScanning && ocrReady;
+  const canLeavePassportStep =
+    passportUploaded && !ocrScanning && (ocrSucceeded || ocrManualMode);
 
   function applyOcrToFormAndContinue() {
     const mapped = ocrFieldsToFormValues(ocrFields);
@@ -699,12 +759,13 @@ export function ApplyFlow() {
 
                 {ocrError ? <p className={styles.formError}>{ocrError}</p> : null}
 
-                {passportBioFile || ocrScanning || ocrReady ? (
+                {passportBioFile || ocrScanning || ocrReady || ocrManualMode || ocrAttemptCount > 0 ? (
                   <PassportOcrPreview
                     fields={ocrFields}
                     warnings={ocrWarnings}
                     confidence={ocrConfidence}
                     scanning={ocrScanning}
+                    allowManualEdit={ocrSucceeded || ocrManualMode}
                     onChange={(key, value) =>
                       setOcrFields((prev) => ({ ...prev, [key]: value }))
                     }

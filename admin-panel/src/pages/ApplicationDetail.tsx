@@ -37,7 +37,7 @@ import {
   issueVisa,
   previewVisaPdf,
 } from '../api/issuedVisas';
-import { ApiError, staffHasPermission } from '../api/client';
+import { ApiError, apiFetch, staffHasPermission } from '../api/client';
 import { useAuth } from '../api/AuthContext';
 import { StatusPill } from '../components/StatusPill';
 import { Modal } from '../components/Modal';
@@ -48,16 +48,65 @@ import '../components/Modal.css';
 const POLL_MS = 5000;
 const CHAT_POLL_MS = 4000;
 
+const PAYMENT_OPTIONS = ['unpaid', 'pending', 'paid', 'failed', 'refunded', 'partial'] as const;
+
+type ApplicantForm = {
+  fullName: string;
+  dateOfBirth: string;
+  sex: string;
+  nationality: string;
+  email: string;
+};
+
+type PassportForm = {
+  passportNumber: string;
+  issuingCountry: string;
+  issueDate: string;
+  expiryDate: string;
+};
+
+type TravelForm = {
+  purpose: string;
+  embassy: string;
+  entryDate: string;
+  exitDate: string;
+  addressInAfghanistan: string;
+  payment: string;
+};
+
 function embassyIdOf(embassy: ApplicationDetailType['embassy']): string | null {
   if (!embassy) return null;
   if (typeof embassy === 'string') return embassy;
   return embassy._id || null;
 }
 
+function toDateInputValue(value?: string | Date | null) {
+  if (!value) return '';
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10);
+  }
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function calcAge(dateOfBirth?: string | null) {
+  if (!dateOfBirth) return null;
+  const d = new Date(dateOfBirth);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000));
+}
+
 export function ApplicationDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { staff } = useAuth();
+  const canAccess =
+    staffHasPermission(staff, 'applications:read') ||
+    staffHasPermission(staff, 'applications:intake');
   const canChat = staffHasPermission(staff, 'chat:access');
   const canDelete = staffHasPermission(staff, 'applications:write');
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -104,6 +153,31 @@ export function ApplicationDetail() {
   const [embassyChatError, setEmbassyChatError] = useState('');
   const embassyMessagesRef = useRef<HTMLDivElement | null>(null);
   const previewUrlRef = useRef<string | null>(null);
+
+  const [editingCard, setEditingCard] = useState<'applicant' | 'passport' | 'travel' | null>(null);
+  const [applicantForm, setApplicantForm] = useState<ApplicantForm>({
+    fullName: '',
+    dateOfBirth: '',
+    sex: '',
+    nationality: '',
+    email: '',
+  });
+  const [passportForm, setPassportForm] = useState<PassportForm>({
+    passportNumber: '',
+    issuingCountry: '',
+    issueDate: '',
+    expiryDate: '',
+  });
+  const [travelForm, setTravelForm] = useState<TravelForm>({
+    purpose: '',
+    embassy: '',
+    entryDate: '',
+    exitDate: '',
+    addressInAfghanistan: '',
+    payment: '',
+  });
+  const [cardSaving, setCardSaving] = useState(false);
+  const [cardError, setCardError] = useState('');
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -201,6 +275,7 @@ export function ApplicationDetail() {
     el.scrollTop = el.scrollHeight;
   }, [embassyMessages.length, chatTab, embassyRoomId]);
 
+  if (!canAccess) return <Navigate to="/" replace />;
   if (!id) return <Navigate to="/applications" replace />;
   if (!loading && !app && error) {
     return (
@@ -234,12 +309,7 @@ export function ApplicationDetail() {
   );
   const assignedEmbassyId = embassyIdOf(current.embassy);
 
-  const age = current.personal?.dateOfBirth
-    ? Math.floor(
-        (Date.now() - new Date(current.personal.dateOfBirth).getTime()) /
-          (365.25 * 24 * 3600 * 1000)
-      )
-    : null;
+  const age = calcAge(current.personal?.dateOfBirth);
 
   const assigned = current.assignedCaseManager;
   const assigneeName = assigned
@@ -253,6 +323,146 @@ export function ApplicationDetail() {
       .join('')
       .slice(0, 2)
       .toUpperCase() || '—';
+
+  function startEditApplicant() {
+    setCardError('');
+    setApplicantForm({
+      fullName: current.personal?.fullName || '',
+      dateOfBirth: toDateInputValue(current.personal?.dateOfBirth),
+      sex: current.personal?.sex || '',
+      nationality: current.personal?.nationality || '',
+      email: current.personal?.email || '',
+    });
+    setEditingCard('applicant');
+  }
+
+  function startEditPassport() {
+    setCardError('');
+    setPassportForm({
+      passportNumber: current.passport?.passportNumber || '',
+      issuingCountry: current.passport?.issuingCountry || '',
+      issueDate: toDateInputValue(current.passport?.issueDate),
+      expiryDate: toDateInputValue(current.passport?.expiryDate),
+    });
+    setEditingCard('passport');
+  }
+
+  async function startEditTravel() {
+    setCardError('');
+    setTravelForm({
+      purpose: current.travel?.purpose || '',
+      embassy: embassyIdOf(current.embassy) || '',
+      entryDate: toDateInputValue(current.travel?.intendedEntryDate),
+      exitDate: toDateInputValue(current.travel?.intendedExitDate),
+      addressInAfghanistan: current.travel?.addressInAfghanistan || '',
+      payment: current.paymentStatus || 'unpaid',
+    });
+    setEditingCard('travel');
+    if (embassyChoices.length === 0) {
+      setEmbassyChoicesLoading(true);
+      try {
+        const { data } = await listEmbassies({ isActive: true, limit: 100 });
+        setEmbassyChoices(Array.isArray(data) ? data : []);
+      } catch {
+        /* keep empty list; select still usable with current id */
+      } finally {
+        setEmbassyChoicesLoading(false);
+      }
+    }
+  }
+
+  function cancelCardEdit() {
+    setEditingCard(null);
+    setCardError('');
+    setCardSaving(false);
+  }
+
+  function mergeApplicationPatch(data: Partial<ApplicationDetailType>) {
+    setApp((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        personal: data.personal ?? prev.personal,
+        passport: data.passport ?? prev.passport,
+        travel: data.travel ?? prev.travel,
+        embassy: data.embassy !== undefined ? data.embassy : prev.embassy,
+        paymentStatus: data.paymentStatus ?? prev.paymentStatus,
+        activity: data.activity ?? prev.activity,
+      };
+    });
+  }
+
+  async function saveApplicant() {
+    if (!id) return;
+    setCardSaving(true);
+    setCardError('');
+    try {
+      const { data } = await apiFetch<ApplicationDetailType>(`/applications/${id}/applicant`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          fullName: applicantForm.fullName.trim(),
+          dateOfBirth: applicantForm.dateOfBirth || null,
+          sex: applicantForm.sex || null,
+          nationality: applicantForm.nationality.trim().toUpperCase() || null,
+          email: applicantForm.email.trim(),
+        }),
+      });
+      mergeApplicationPatch(data);
+      setEditingCard(null);
+    } catch (err) {
+      setCardError(err instanceof ApiError ? err.message : 'Failed to save applicant information');
+    } finally {
+      setCardSaving(false);
+    }
+  }
+
+  async function savePassport() {
+    if (!id) return;
+    setCardSaving(true);
+    setCardError('');
+    try {
+      const { data } = await apiFetch<ApplicationDetailType>(`/applications/${id}/passport`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          passportNumber: passportForm.passportNumber.trim(),
+          issuingCountry: passportForm.issuingCountry.trim().toUpperCase() || null,
+          issueDate: passportForm.issueDate || null,
+          expiryDate: passportForm.expiryDate || null,
+        }),
+      });
+      mergeApplicationPatch(data);
+      setEditingCard(null);
+    } catch (err) {
+      setCardError(err instanceof ApiError ? err.message : 'Failed to save passport information');
+    } finally {
+      setCardSaving(false);
+    }
+  }
+
+  async function saveTravel() {
+    if (!id) return;
+    setCardSaving(true);
+    setCardError('');
+    try {
+      const { data } = await apiFetch<ApplicationDetailType>(`/applications/${id}/travel`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          purpose: travelForm.purpose.trim(),
+          embassy: travelForm.embassy || null,
+          entryDate: travelForm.entryDate || null,
+          exitDate: travelForm.exitDate || null,
+          addressInAfghanistan: travelForm.addressInAfghanistan.trim(),
+          payment: travelForm.payment || null,
+        }),
+      });
+      mergeApplicationPatch(data);
+      setEditingCard(null);
+    } catch (err) {
+      setCardError(err instanceof ApiError ? err.message : 'Failed to save travel information');
+    } finally {
+      setCardSaving(false);
+    }
+  }
 
   async function onRequestDocs(e: FormEvent) {
     e.preventDefault();
@@ -886,33 +1096,141 @@ export function ApplicationDetail() {
                 <UserRound size={16} />
               </span>
               <h3>Applicant information</h3>
+              <div className="info-card__actions">
+                {editingCard === 'applicant' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--ghost"
+                      onClick={cancelCardEdit}
+                      disabled={cardSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--primary"
+                      onClick={() => void saveApplicant()}
+                      disabled={cardSaving}
+                    >
+                      {cardSaving ? 'Saving…' : 'Save'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="info-card__btn info-card__btn--ghost"
+                    onClick={startEditApplicant}
+                    disabled={editingCard !== null}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </header>
-            <dl className="info-card__grid">
-              <div>
-                <dt>Full name</dt>
-                <dd>{app.personal?.fullName || '—'}</dd>
-              </div>
-              <div>
-                <dt>Date of birth</dt>
-                <dd>{formatDate(app.personal?.dateOfBirth)}</dd>
-              </div>
-              <div>
-                <dt>Age</dt>
-                <dd>{age ?? '—'}</dd>
-              </div>
-              <div>
-                <dt>Sex</dt>
-                <dd>{app.personal?.sex || '—'}</dd>
-              </div>
-              <div>
-                <dt>Nationality</dt>
-                <dd>{app.personal?.nationality || '—'}</dd>
-              </div>
-              <div>
-                <dt>Email</dt>
-                <dd>{app.personal?.email || '—'}</dd>
-              </div>
-            </dl>
+            {editingCard === 'applicant' && cardError ? (
+              <div className="info-card__error">{cardError}</div>
+            ) : null}
+            {editingCard === 'applicant' ? (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Full name</dt>
+                  <dd>
+                    <input
+                      value={applicantForm.fullName}
+                      onChange={(e) =>
+                        setApplicantForm((f) => ({ ...f, fullName: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Date of birth</dt>
+                  <dd>
+                    <input
+                      type="date"
+                      value={applicantForm.dateOfBirth}
+                      onChange={(e) =>
+                        setApplicantForm((f) => ({ ...f, dateOfBirth: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Age</dt>
+                  <dd>{calcAge(applicantForm.dateOfBirth) ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Sex</dt>
+                  <dd>
+                    <select
+                      value={applicantForm.sex}
+                      onChange={(e) => setApplicantForm((f) => ({ ...f, sex: e.target.value }))}
+                    >
+                      <option value="">—</option>
+                      <option value="male">male</option>
+                      <option value="female">female</option>
+                      <option value="other">other</option>
+                    </select>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Nationality</dt>
+                  <dd>
+                    <input
+                      maxLength={3}
+                      placeholder="e.g. GB"
+                      value={applicantForm.nationality}
+                      onChange={(e) =>
+                        setApplicantForm((f) => ({
+                          ...f,
+                          nationality: e.target.value.toUpperCase(),
+                        }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>
+                    <input
+                      type="email"
+                      value={applicantForm.email}
+                      onChange={(e) =>
+                        setApplicantForm((f) => ({ ...f, email: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Full name</dt>
+                  <dd>{app.personal?.fullName || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Date of birth</dt>
+                  <dd>{formatDate(app.personal?.dateOfBirth)}</dd>
+                </div>
+                <div>
+                  <dt>Age</dt>
+                  <dd>{age ?? '—'}</dd>
+                </div>
+                <div>
+                  <dt>Sex</dt>
+                  <dd>{app.personal?.sex || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Nationality</dt>
+                  <dd>{app.personal?.nationality || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{app.personal?.email || '—'}</dd>
+                </div>
+              </dl>
+            )}
           </section>
 
           <section className="info-card">
@@ -921,25 +1239,115 @@ export function ApplicationDetail() {
                 <Shield size={16} />
               </span>
               <h3>Passport information</h3>
+              <div className="info-card__actions">
+                {editingCard === 'passport' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--ghost"
+                      onClick={cancelCardEdit}
+                      disabled={cardSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--primary"
+                      onClick={() => void savePassport()}
+                      disabled={cardSaving}
+                    >
+                      {cardSaving ? 'Saving…' : 'Save'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="info-card__btn info-card__btn--ghost"
+                    onClick={startEditPassport}
+                    disabled={editingCard !== null}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </header>
-            <dl className="info-card__grid">
-              <div>
-                <dt>Passport number</dt>
-                <dd>{app.passport?.passportNumber || '—'}</dd>
-              </div>
-              <div>
-                <dt>Issuing country</dt>
-                <dd>{app.passport?.issuingCountry || '—'}</dd>
-              </div>
-              <div>
-                <dt>Issue date</dt>
-                <dd>{formatDate(app.passport?.issueDate)}</dd>
-              </div>
-              <div>
-                <dt>Expiry date</dt>
-                <dd>{formatDate(app.passport?.expiryDate)}</dd>
-              </div>
-            </dl>
+            {editingCard === 'passport' && cardError ? (
+              <div className="info-card__error">{cardError}</div>
+            ) : null}
+            {editingCard === 'passport' ? (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Passport number</dt>
+                  <dd>
+                    <input
+                      value={passportForm.passportNumber}
+                      onChange={(e) =>
+                        setPassportForm((f) => ({ ...f, passportNumber: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Issuing country</dt>
+                  <dd>
+                    <input
+                      maxLength={3}
+                      placeholder="e.g. IN"
+                      value={passportForm.issuingCountry}
+                      onChange={(e) =>
+                        setPassportForm((f) => ({
+                          ...f,
+                          issuingCountry: e.target.value.toUpperCase(),
+                        }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Issue date</dt>
+                  <dd>
+                    <input
+                      type="date"
+                      value={passportForm.issueDate}
+                      onChange={(e) =>
+                        setPassportForm((f) => ({ ...f, issueDate: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Expiry date</dt>
+                  <dd>
+                    <input
+                      type="date"
+                      value={passportForm.expiryDate}
+                      onChange={(e) =>
+                        setPassportForm((f) => ({ ...f, expiryDate: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Passport number</dt>
+                  <dd>{app.passport?.passportNumber || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Issuing country</dt>
+                  <dd>{app.passport?.issuingCountry || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Issue date</dt>
+                  <dd>{formatDate(app.passport?.issueDate)}</dd>
+                </div>
+                <div>
+                  <dt>Expiry date</dt>
+                  <dd>{formatDate(app.passport?.expiryDate)}</dd>
+                </div>
+              </dl>
+            )}
           </section>
 
           <section className="info-card">
@@ -948,38 +1356,171 @@ export function ApplicationDetail() {
                 <Plane size={16} />
               </span>
               <h3>Travel & embassy</h3>
+              <div className="info-card__actions">
+                {editingCard === 'travel' ? (
+                  <>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--ghost"
+                      onClick={cancelCardEdit}
+                      disabled={cardSaving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="info-card__btn info-card__btn--primary"
+                      onClick={() => void saveTravel()}
+                      disabled={cardSaving}
+                    >
+                      {cardSaving ? 'Saving…' : 'Save'}
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="info-card__btn info-card__btn--ghost"
+                    onClick={() => void startEditTravel()}
+                    disabled={editingCard !== null}
+                  >
+                    Edit
+                  </button>
+                )}
+              </div>
             </header>
-            <dl className="info-card__grid">
-              <div>
-                <dt>Purpose</dt>
-                <dd>{app.travel?.purpose || '—'}</dd>
-              </div>
-              <div>
-                <dt>Embassy</dt>
-                <dd>
-                  <span className="app-detail__embassy">
-                    <Building2 size={14} />
-                    {embassyLabel(app.embassy)}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt>Entry date</dt>
-                <dd>{formatDate(app.travel?.intendedEntryDate)}</dd>
-              </div>
-              <div>
-                <dt>Exit date</dt>
-                <dd>{formatDate(app.travel?.intendedExitDate)}</dd>
-              </div>
-              <div className="info-card__span">
-                <dt>Address in Afghanistan</dt>
-                <dd>{app.travel?.addressInAfghanistan || '—'}</dd>
-              </div>
-              <div>
-                <dt>Payment</dt>
-                <dd>{app.paymentStatus || '—'}</dd>
-              </div>
-            </dl>
+            {editingCard === 'travel' && cardError ? (
+              <div className="info-card__error">{cardError}</div>
+            ) : null}
+            {editingCard === 'travel' ? (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Purpose</dt>
+                  <dd>
+                    <input
+                      value={travelForm.purpose}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({ ...f, purpose: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Embassy</dt>
+                  <dd>
+                    <select
+                      value={travelForm.embassy}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({ ...f, embassy: e.target.value }))
+                      }
+                      disabled={embassyChoicesLoading}
+                    >
+                      <option value="">
+                        {embassyChoicesLoading ? 'Loading embassies…' : '—'}
+                      </option>
+                      {travelForm.embassy &&
+                      !embassyChoices.some((e) => e._id === travelForm.embassy) ? (
+                        <option value={travelForm.embassy}>
+                          {embassyLabel(app.embassy)}
+                        </option>
+                      ) : null}
+                      {embassyChoices.map((emb) => (
+                        <option key={emb._id} value={emb._id}>
+                          {emb.name}
+                          {emb.code ? ` (${emb.code})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Entry date</dt>
+                  <dd>
+                    <input
+                      type="date"
+                      value={travelForm.entryDate}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({ ...f, entryDate: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Exit date</dt>
+                  <dd>
+                    <input
+                      type="date"
+                      value={travelForm.exitDate}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({ ...f, exitDate: e.target.value }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div className="info-card__span">
+                  <dt>Address in Afghanistan</dt>
+                  <dd>
+                    <input
+                      value={travelForm.addressInAfghanistan}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({
+                          ...f,
+                          addressInAfghanistan: e.target.value,
+                        }))
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Payment</dt>
+                  <dd>
+                    <select
+                      value={travelForm.payment}
+                      onChange={(e) =>
+                        setTravelForm((f) => ({ ...f, payment: e.target.value }))
+                      }
+                    >
+                      {PAYMENT_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+              </dl>
+            ) : (
+              <dl className="info-card__grid">
+                <div>
+                  <dt>Purpose</dt>
+                  <dd>{app.travel?.purpose || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Embassy</dt>
+                  <dd>
+                    <span className="app-detail__embassy">
+                      <Building2 size={14} />
+                      {embassyLabel(app.embassy)}
+                    </span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Entry date</dt>
+                  <dd>{formatDate(app.travel?.intendedEntryDate)}</dd>
+                </div>
+                <div>
+                  <dt>Exit date</dt>
+                  <dd>{formatDate(app.travel?.intendedExitDate)}</dd>
+                </div>
+                <div className="info-card__span">
+                  <dt>Address in Afghanistan</dt>
+                  <dd>{app.travel?.addressInAfghanistan || '—'}</dd>
+                </div>
+                <div>
+                  <dt>Payment</dt>
+                  <dd>{app.paymentStatus || '—'}</dd>
+                </div>
+              </dl>
+            )}
           </section>
         </div>
       </div>
