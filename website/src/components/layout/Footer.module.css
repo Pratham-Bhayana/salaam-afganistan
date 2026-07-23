@@ -26,15 +26,16 @@
 }
 
 .logo {
-  height: 52px;
-  width: auto;
+  height: 64px;
+  width: 64px;
   object-fit: contain;
+  border-radius: 50%;
 }
 
 .logoDivider {
   display: block;
   width: 1px;
-  height: 36px;
+  height: 44px;
   background: var(--color-gray-300);
   flex-shrink: 0;
 }

@@ -102,7 +102,7 @@ export function SignupClient() {
     <div className={styles.authPage}>
       <div className={styles.authCard}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.png" alt="Salaam Afghanistan" className={styles.logo} />
+        <img src="/moic.png" alt="Salaam Afghanistan" className={styles.logo} />
 
         <h1 className={styles.heading}>Create Account</h1>
         <p className={styles.subtitle}>Sign up to start your visa application</p>

@@ -3,7 +3,11 @@ const path = require('path');
 const multer = require('multer');
 const { ApiError } = require('./error');
 
-const uploadRoot = path.join(__dirname, '..', '..', 'uploads');
+// Configurable so a Railway/host persistent Volume can be mounted (e.g.
+// UPLOAD_DIR=/data/uploads). Defaults to the in-repo uploads folder for local dev.
+const uploadRoot = process.env.UPLOAD_DIR
+  ? path.resolve(process.env.UPLOAD_DIR)
+  : path.join(__dirname, '..', '..', 'uploads');
 
 function ensureUploadDirs() {
   const dirs = [

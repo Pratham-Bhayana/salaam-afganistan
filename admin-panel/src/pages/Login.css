@@ -80,9 +80,10 @@
 }
 
 .login-hero__logo {
-  height: 40px;
-  width: auto;
+  height: 56px;
+  width: 56px;
   object-fit: contain;
+  border-radius: 50%;
 }
 
 .login-hero__logo--raizing {

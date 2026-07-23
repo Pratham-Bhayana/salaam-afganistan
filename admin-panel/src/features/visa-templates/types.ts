@@ -5,7 +5,7 @@ export type TemplateStatus = 'active' | 'draft';
 export type AccentColor = '#1B4D45' | '#0B3D2E' | '#C4A35A' | '#E8B84A';
 
 /** Vite public assets — default logos on every new/mock template */
-export const DEFAULT_SALAAM_LOGO = '/Logo.png';
+export const DEFAULT_SALAAM_LOGO = '/moic.png';
 export const DEFAULT_EMBASSY_LOGO = '/taliban-flag.png';
 export const DEFAULT_WATERMARK = '/taliban-flag.png';
 

@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "Shared API for Salaam Afghanistan website, admin panel, and embassy panel",
   "main": "src/index.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "seed": "node seed/seed.js",
     "seed:local": "node seed/seed.js",
     "seed:fresh": "node seed/seed.js --fresh",
+    "seed:demo-embassy": "node seed/seedDemoEmbassy.js",
+    "seed:demo-admin": "node seed/seedDemoAdmin.js",
     "seed:application": "node seed/seedApplication.js"
   },
   "dependencies": {

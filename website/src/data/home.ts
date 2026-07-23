@@ -83,21 +83,24 @@ export const DESTINATIONS: Destination[] = [
 ];
 
 export const LEADER: LeaderInfo = {
-  name: "His Excellency Hibatullah Akhundzada",
-  title: "Supreme Lead of Islamic Emirate of Afghanistan",
-  imageSrc: "/images/leader.png",
-  imageAlt: "His Excellency Hibatullah Akhundzada",
+  name: "Sheikh Shir Ahmad Haqqani",
+  title: "Minister of Information and Culture",
+  imageSrc: "/images/leader.jpeg",
+  imageAlt: "Sheikh Shir Ahmad Haqqani, Minister of Information and Culture",
   bio: [
-    "Hibatullah Akhundzada serves as the Supreme Leader of Afghanistan and is the highest authority within the country's current governing structure. He has led the Taliban movement since 2016 and became the de facto head of state following the establishment of the Islamic Emirate of Afghanistan in August 2021.",
-    "A religious scholar and Islamic jurist by background, Akhundzada previously served in judicial and religious leadership roles. Unlike many Taliban leaders, he is primarily known for his religious and legal authority rather than military leadership.",
+    "Sheikh Shir Ahmad Haqqani, son of Abdul Qadeer, was born in 1347 AH (1968 CE) in Omr Khail village, Nerkh District, Maidan Wardak Province. He pursued higher Islamic studies at Darul Uloom Haqqania in Akora Khattak, Peshawar.",
+    "A long-standing member of the Islamic Emirate, he has held senior provincial, judicial, and governance roles. On 8 Rabi al-Awwal 1447 AH, by decree of the Esteemed Amir al-Mu'minin (may Allah protect him), he was appointed Minister of Information and Culture.",
   ],
   infoRows: [
-    { label: "Position", value: "Supreme Leader of Afghanistan" },
-    { label: "Full Name", value: "Hibatullah Akhundzada" },
-    { label: "Assumed Leadership of Taliban", value: "2016" },
-    { label: "Head of State Since", value: "August 2021" },
-    { label: "Background", value: "Islamic Scholar & Jurist" },
+    { label: "Position", value: "Minister of Information and Culture" },
+    { label: "Full Name", value: "Sheikh Shir Ahmad Haqqani" },
+    { label: "Born", value: "1347 AH (1968 CE)" },
+    { label: "Birthplace", value: "Omr Khail, Maidan Wardak" },
+    { label: "Education", value: "Darul Uloom Haqqania, Peshawar" },
   ],
+  messageTitle: "Message of Minister",
+  messageBody:
+    "Dear Citizens, The leadership of the Ministry of Information and Culture is dedicated to promoting cultural growth, enhancing the standards of media and publications, developing the tourism industry, and ensuring the overall progress of our youth. The recent reforms within the ministry clearly reflect our commitment and vision to achieve these goals.",
 };
 
 export const COUNTRY_INFO_CARDS: InfoCardItem[] = [

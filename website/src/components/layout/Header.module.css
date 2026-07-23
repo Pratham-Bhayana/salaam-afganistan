@@ -142,11 +142,12 @@
 
 .partnerLogo {
   display: block;
-  height: 38px;
-  width: auto;
-  max-width: 120px;
+  height: 48px;
+  width: 48px;
+  max-width: none;
   object-fit: contain;
   object-position: center;
+  border-radius: 50%;
 }
 
 /* Nav links — centered with proper spacing */
@@ -243,10 +244,11 @@
 }
 
 .offcanvasPartner {
-  height: 36px;
-  width: auto;
-  max-width: 110px;
+  height: 48px;
+  width: 48px;
+  max-width: none;
   object-fit: contain;
+  border-radius: 50%;
 }
 
 .offcanvasNav {
@@ -300,8 +302,9 @@
   }
 
   .partnerLogo {
-    height: 44px;
-    max-width: 140px;
+    height: 56px;
+    width: 56px;
+    max-width: none;
   }
 
   .navList {
@@ -338,7 +341,8 @@
   }
 
   .partnerLogo {
-    height: 48px;
-    max-width: 150px;
+    height: 60px;
+    width: 60px;
+    max-width: none;
   }
 }

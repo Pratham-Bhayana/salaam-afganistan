@@ -19,11 +19,12 @@
 
 .logo {
   display: block;
-  height: 48px;
-  width: auto;
-  max-width: 180px;
+  height: 72px;
+  width: 72px;
+  max-width: none;
   margin: 0 auto 1.25rem;
   object-fit: contain;
+  border-radius: 50%;
 }
 
 .heading {

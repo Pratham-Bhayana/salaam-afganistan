@@ -35,6 +35,9 @@ export interface LeaderInfo {
   imageAlt: string;
   bio: string[];
   infoRows: { label: string; value: string }[];
+  /** Minister's message shown below the portrait */
+  messageTitle?: string;
+  messageBody?: string;
 }
 
 export interface OurStoryContent {

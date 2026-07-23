@@ -145,7 +145,7 @@ export function Header() {
           <Link href="/" className={styles.partnerLogoLink}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/logo.png"
+              src="/moic.png"
               alt="Salaam Afghanistan"
               className={styles.partnerLogo}
             />
@@ -181,7 +181,7 @@ export function Header() {
             <img src="/raizing-logo.png" alt="Raizing Global" className={styles.offcanvasRaizing} />
             <span className={styles.logoDivider} aria-hidden />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logo.png" alt="Salaam Afghanistan" className={styles.offcanvasPartner} />
+            <img src="/moic.png" alt="Salaam Afghanistan" className={styles.offcanvasPartner} />
           </div>
           <ul className={styles.offcanvasNav}>
             {NAV_LINKS.map((link) => (

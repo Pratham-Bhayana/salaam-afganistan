@@ -214,8 +214,8 @@ async function seedEmbassyBootstrap() {
 
   await ensureEmbassyGeneralRoom(kbl);
 
-  const email = process.env.SEED_EMBASSY_EMAIL || 'embassy.admin@salaam.local';
-  const password = process.env.SEED_EMBASSY_PASSWORD || 'ChangeMeNow!123';
+  const email = process.env.SEED_EMBASSY_EMAIL || 'demoembassy@afghanistan.com';
+  const password = process.env.SEED_EMBASSY_PASSWORD || 'Demo@1234';
   const passwordHash = await EmbassyStaff.hashPassword(password);
 
   const embassyAdmin = await EmbassyStaff.findOneAndUpdate(
@@ -336,7 +336,7 @@ async function seed() {
   });
   console.log('Embassy bootstrap:', {
     ...embassyBootstrap,
-    defaultPasswordHint: process.env.SEED_EMBASSY_PASSWORD ? '(from SEED_EMBASSY_PASSWORD)' : 'ChangeMeNow!123',
+    defaultPasswordHint: process.env.SEED_EMBASSY_PASSWORD ? '(from SEED_EMBASSY_PASSWORD)' : 'Demo@1234',
   });
 }
 

@@ -382,7 +382,7 @@ Valid roles: `super_admin` | `case_manager` | `finance` | `receptionist`
 | `category` | text | no | `admin_delivery` / `correspondence` / `visa_document` |
 | `visibleToApplicant` | text | no | `"false"` to hide from applicant |
 
-```js
+```js 
 const form = new FormData();
 form.append('file', fileInput.files[0]);
 form.append('label', 'Request letter');
@@ -391,7 +391,7 @@ form.append('note', 'Please review and respond');
 await fetch(`${BASE}/api/v1/admin/applications/${id}/documents/deliver`, {
   method: 'POST',
   headers: { Authorization: `Bearer ${token}` }, // do NOT set Content-Type manually
-  body: form,
+  body: form,   
 });
 ```
 

@@ -21,9 +21,10 @@
 }
 
 .logoCard img {
-  height: 56px;
-  width: auto;
-  filter: invert(1);
+  height: 72px;
+  width: 72px;
+  object-fit: contain;
+  border-radius: 50%;
 }
 
 .logoCard strong {
