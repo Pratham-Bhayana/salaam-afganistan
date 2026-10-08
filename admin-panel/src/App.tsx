@@ -13,6 +13,7 @@ import { Staff } from './pages/Staff';
 import { Settings } from './pages/Settings';
 import { AuditLogs } from './pages/AuditLogs';
 import { EmbassyActivity } from './pages/EmbassyActivity';
+import { Contacts } from './pages/Contacts';
 import { Chat } from './pages/Chat';
 import { Receptionist } from './pages/Receptionist';
 import { Login } from './pages/Login';
@@ -46,6 +47,7 @@ export default function App() {
             <Route path="visa-templates/:id" element={<TemplateBuilder />} />
             <Route path="staff" element={<Staff />} />
             <Route path="chat" element={<Chat />} />
+            <Route path="contact" element={<Contacts />} />
             <Route path="settings" element={<Settings />} />
             <Route path="audit-logs" element={<AuditLogs />} />
             <Route path="embassy-activity" element={<EmbassyActivity />} />

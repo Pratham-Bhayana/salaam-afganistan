@@ -13,6 +13,7 @@ const documentController = require('../../controllers/website/documentController
 const notificationController = require('../../controllers/website/notificationController');
 const paymentController = require('../../controllers/website/paymentController');
 const dashboardController = require('../../controllers/website/dashboardController');
+const contactController = require('../../controllers/website/contactController');
 
 const router = express.Router();
 
@@ -38,6 +39,22 @@ router.post(
   body('refreshToken').notEmpty(),
   validate,
   authController.refresh
+);
+
+const contactLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many messages, please try again later' },
+});
+
+router.post(
+  '/contact',
+  contactLimiter,
+  contactController.submitValidators,
+  validate,
+  contactController.submit
 );
 
 router.use(authenticateApplicant);

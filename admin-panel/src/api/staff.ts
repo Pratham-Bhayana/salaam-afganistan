@@ -100,6 +100,7 @@ const ROLE_SECTION_DEFAULTS: Record<string, SectionKey[]> = {
     'settings',
     'audit',
     'embassy-activity',
+    'contacts',
   ],
   case_manager: [
     'dashboard',
@@ -110,9 +111,10 @@ const ROLE_SECTION_DEFAULTS: Record<string, SectionKey[]> = {
     'templates',
     'audit',
     'embassy-activity',
+    'contacts',
   ],
   finance: ['dashboard', 'applications', 'records', 'finance'],
-  receptionist: ['dashboard', 'applications', 'receptionist'],
+  receptionist: ['dashboard', 'applications', 'receptionist', 'contacts'],
 };
 
 export function toBackendRole(role: StaffRole): string {

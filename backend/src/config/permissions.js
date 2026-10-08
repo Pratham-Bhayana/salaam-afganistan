@@ -28,6 +28,7 @@ const PERMISSIONS = Object.freeze({
   VISAS_ISSUED_MANAGE: 'visas_issued:manage',
   RECORDS_EXPORT: 'records:export',
   AUDIT_READ: 'audit:read',
+  CONTACTS_READ: 'contacts:read',
 });
 
 /**
@@ -48,6 +49,7 @@ const SECTION_PERMISSIONS = Object.freeze({
   settings: [PERMISSIONS.SETTINGS_MANAGE],
   audit: [PERMISSIONS.AUDIT_READ],
   'embassy-activity': [PERMISSIONS.AUDIT_READ],
+  contacts: [PERMISSIONS.CONTACTS_READ],
 });
 
 /** Default enabled sections per role (before sectionOverrides). */
@@ -62,9 +64,10 @@ const ROLE_SECTION_DEFAULTS = Object.freeze({
     'templates',
     'audit',
     'embassy-activity',
+    'contacts',
   ],
   [ROLES.FINANCE]: ['dashboard', 'applications', 'records', 'finance'],
-  [ROLES.RECEPTIONIST]: ['dashboard', 'applications', 'receptionist'],
+  [ROLES.RECEPTIONIST]: ['dashboard', 'applications', 'receptionist', 'contacts'],
 });
 
 const ROLE_PERMISSIONS = Object.freeze({
@@ -81,6 +84,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.AUDIT_READ,
     PERMISSIONS.FEES_CONTENT_MANAGE,
     PERMISSIONS.TEMPLATES_MANAGE,
+    PERMISSIONS.CONTACTS_READ,
   ],
   [ROLES.FINANCE]: [
     PERMISSIONS.APPLICATIONS_READ,
@@ -92,6 +96,7 @@ const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.RECEPTIONIST]: [
     PERMISSIONS.APPLICATIONS_READ,
     PERMISSIONS.APPLICATIONS_INTAKE,
+    PERMISSIONS.CONTACTS_READ,
   ],
 });
 

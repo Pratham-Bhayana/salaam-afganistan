@@ -21,6 +21,7 @@ const recordsController = require('../../controllers/admin/recordsController');
 const dashboardController = require('../../controllers/admin/dashboardController');
 const embassyActivityController = require('../../controllers/admin/embassyActivityController');
 const notificationController = require('../../controllers/admin/notificationController');
+const contactController = require('../../controllers/admin/contactController');
 const {
   visaTypes,
   eligibilityRules,
@@ -265,6 +266,16 @@ router.post(
 );
 
 // ─── Notifications ───────────────────────────────────────────────────────────
+router.get('/contacts', requirePermission(PERMISSIONS.CONTACTS_READ), contactController.list);
+router.get('/contacts/:id', requirePermission(PERMISSIONS.CONTACTS_READ), contactController.getById);
+router.patch(
+  '/contacts/:id',
+  requirePermission(PERMISSIONS.CONTACTS_READ),
+  contactController.updateStatusValidators,
+  validate,
+  contactController.updateStatus
+);
+
 router.get('/notifications', notificationController.list);
 router.post('/notifications/read-all', notificationController.markAllRead);
 router.post('/notifications/:id/read', notificationController.markRead);

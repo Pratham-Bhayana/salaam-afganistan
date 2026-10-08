@@ -187,6 +187,28 @@ export async function exchangeFirebaseToken(
   }
 }
 
+export type ContactEnquiryPayload = {
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+};
+
+/** Public contact form — no login required. */
+export async function submitContactEnquiry(payload: ContactEnquiryPayload) {
+  const res = await fetch(`${WEBSITE_PREFIX}/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const json = await parseJson<{ id: string; name: string; email: string }>(res);
+  if (!res.ok || json.success === false) {
+    throw new WebsiteApiError(json.message || "Could not send your message.", res.status);
+  }
+  return json.data;
+}
+
 export async function logoutWebsiteSession() {
   const refreshToken = getWebsiteRefreshToken();
   const accessToken = getWebsiteAccessToken();
