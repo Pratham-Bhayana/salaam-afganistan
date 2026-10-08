@@ -15,6 +15,13 @@ export function LeadershipSection() {
                 style={{ background: "var(--color-gray-200)" }}
               />
             </div>
+
+            {LEADER.messageTitle && LEADER.messageBody ? (
+              <aside className={styles.message} aria-label={LEADER.messageTitle}>
+                <h3 className={styles.messageTitle}>{LEADER.messageTitle}</h3>
+                <p className={styles.messageBody}>{LEADER.messageBody}</p>
+              </aside>
+            ) : null}
           </div>
 
           <div className={styles.content}>

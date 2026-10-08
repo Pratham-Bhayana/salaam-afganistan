@@ -21,9 +21,30 @@
 }
 
 .logoCard img {
+  height: 72px;
+  width: 72px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+
+.logoCard .brandLogo {
   height: 56px;
   width: auto;
-  filter: invert(1);
+  max-width: 140px;
+  border-radius: 0;
+}
+
+.logoCard .moicLogo {
+  height: 72px;
+  width: 72px;
+  border-radius: 50%;
+}
+
+.logoCardDivider {
+  width: 1px;
+  height: 44px;
+  background: var(--color-gray-300);
+  flex-shrink: 0;
 }
 
 .logoCard strong {

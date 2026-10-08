@@ -44,7 +44,13 @@ export function Login() {
 
         <div className="login-hero__content">
           <div className="login-hero__logos">
-            <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="login-hero__logo" />
+            <img src="/logo.png" alt="Salaam Afghanistan" className="login-hero__logo login-hero__logo--brand" />
+            <span className="login-hero__logo-divider" aria-hidden />
+            <img
+              src="/moic.png"
+              alt="Ministry of Information and Culture"
+              className="login-hero__logo"
+            />
             <span className="login-hero__logo-divider" aria-hidden />
             <img
               src="/Flag-Afghanistan.webp"

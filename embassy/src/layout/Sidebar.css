@@ -34,9 +34,17 @@
 }
 
 .sidebar__logo {
-  height: 52px;
-  width: auto;
+  height: 56px;
+  width: 56px;
   object-fit: contain;
+  border-radius: 50%;
+}
+
+.sidebar__logo--brand {
+  height: 44px;
+  width: auto;
+  max-width: 96px;
+  border-radius: 0;
 }
 
 .sidebar__logo--flag {

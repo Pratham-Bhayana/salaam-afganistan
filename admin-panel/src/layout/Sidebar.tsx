@@ -132,7 +132,11 @@ export function Sidebar() {
 
         <div className="sidebar__logos">
 
-          <img src="/salaam-logo.png" alt="Salaam Afghanistan" className="sidebar__logo" />
+          <img src="/logo.png" alt="Salaam Afghanistan" className="sidebar__logo sidebar__logo--brand" />
+
+          <span className="sidebar__logo-divider" aria-hidden />
+
+          <img src="/moic.png" alt="Ministry of Information and Culture" className="sidebar__logo" />
 
           <span className="sidebar__logo-divider" aria-hidden />
 
