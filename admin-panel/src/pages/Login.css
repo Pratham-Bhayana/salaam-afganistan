@@ -94,8 +94,9 @@
 }
 
 .login-hero__logo--raizing {
-  height: 32px;
-  max-width: 120px;
+  height: 56px;
+  width: 58px;
+  border-radius: 0;
 }
 
 .login-hero__logo-divider {

@@ -6,7 +6,7 @@ const { getClientIp } = require('../../utils/helpers');
 
 const loginValidators = [
   body('email').isEmail().withMessage('Valid email required'),
-  body('password').isString().isLength({ min: 8 }).withMessage('Password required'),
+  body('password').isString().notEmpty().withMessage('Password required'),
 ];
 
 const login = asyncHandler(async (req, res) => {

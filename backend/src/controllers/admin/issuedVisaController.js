@@ -15,6 +15,7 @@ const {
   previewVisaForApplication,
 } = require('../../services/visaGenerationService');
 const { auditFromReq } = require('../../services/auditService');
+const { pipeRemoteFile } = require('../../services/remoteFileService');
 const {
   EVISA_TEMPLATE_CODE,
   VISA_TYPE_KEYS,
@@ -181,7 +182,10 @@ const downloadIssued = asyncHandler(async (req, res) => {
   const visa = await IssuedVisa.findById(req.params.id);
   if (!visa) throw new ApiError(404, 'Issued visa not found');
   const absolute = path.join(uploadRoot, visa.storagePath);
-  if (!fs.existsSync(absolute)) throw new ApiError(404, 'Visa PDF missing on storage');
+  if (!fs.existsSync(absolute)) {
+    if (await pipeRemoteFile(res, `/api/v1/admin/issued-visas/${visa._id}/download`)) return undefined;
+    throw new ApiError(404, 'Visa PDF missing on storage');
+  }
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${visa.visaNumber}.pdf"`);

@@ -6,6 +6,7 @@ const { ApiError, asyncHandler, success } = require('../../middleware/error');
 const { uploadRoot } = require('../../middleware/upload');
 const { notifyApplicant } = require('../../services/emailService');
 const { auditFromReq } = require('../../services/auditService');
+const { pipeRemoteFile } = require('../../services/remoteFileService');
 
 const deliverDocument = asyncHandler(async (req, res) => {
   const application = await Application.findById(req.params.id);
@@ -76,7 +77,10 @@ const downloadDocument = asyncHandler(async (req, res) => {
   if (!doc || doc.isDeleted) throw new ApiError(404, 'Document not found');
 
   const absolute = path.join(uploadRoot, doc.storagePath);
-  if (!fs.existsSync(absolute)) throw new ApiError(404, 'File missing on storage');
+  if (!fs.existsSync(absolute)) {
+    if (await pipeRemoteFile(res, `/api/v1/admin/documents/${doc._id}/download`)) return undefined;
+    throw new ApiError(404, 'File missing on storage');
+  }
 
   await auditFromReq(req, {
     action: 'document.download',

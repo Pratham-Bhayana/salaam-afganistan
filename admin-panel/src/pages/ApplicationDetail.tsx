@@ -5,6 +5,7 @@ import {
   Copy,
   Download,
   ExternalLink,
+  Eye,
   FileText,
   Plane,
   Send,
@@ -598,6 +599,22 @@ export function ApplicationDetail() {
     }
   }
 
+  async function onViewDocument(documentId: string, mimeType?: string) {
+    // Open the tab synchronously so the browser doesn't treat it as a popup.
+    const tab = window.open('', '_blank');
+    try {
+      const { blob } = await downloadApplicationDocument(documentId);
+      const typed = blob.type ? blob : new Blob([blob], { type: mimeType || 'application/pdf' });
+      const url = URL.createObjectURL(typed);
+      if (tab) tab.location.href = url;
+      else window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      tab?.close();
+      setActionError(err instanceof ApiError ? err.message : 'Failed to open document');
+    }
+  }
+
   async function loadActiveEmbassies() {
     setEmbassyChoicesLoading(true);
     try {
@@ -897,9 +914,20 @@ export function ApplicationDetail() {
                     </span>
                   </div>
                   <div className="app-detail__doc-actions">
+                    {doc.mimeType?.startsWith('image/') || doc.mimeType === 'application/pdf' ? (
+                      <button
+                        type="button"
+                        className="app-detail__doc-dl"
+                        onClick={() => void onViewDocument(doc._id, doc.mimeType)}
+                      >
+                        <Eye size={14} />
+                        View
+                      </button>
+                    ) : null}
                     <button
                       type="button"
                       className="app-detail__doc-dl"
+                      title="Download"
                       onClick={() =>
                         void onDownloadDocument(
                           doc._id,
@@ -908,7 +936,7 @@ export function ApplicationDetail() {
                       }
                     >
                       <Download size={14} />
-                      {doc.mimeType?.startsWith('image/') ? 'View' : 'Download'}
+                      Download
                     </button>
                   </div>
                 </div>

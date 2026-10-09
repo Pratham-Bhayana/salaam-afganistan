@@ -241,9 +241,10 @@ export async function loginAdmin(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 
-  const json = (await res.json()) as {
+  const json = (await res.json().catch(() => ({}))) as {
     success?: boolean;
     message?: string;
+    details?: { field?: string; message?: string }[];
     data?: {
       accessToken: string;
       refreshToken: string;
@@ -253,7 +254,8 @@ export async function loginAdmin(email: string, password: string) {
   };
 
   if (!res.ok || !json.success || !json.data) {
-    throw new ApiError(res.status, json.message || 'Login failed');
+    const detail = Array.isArray(json.details) ? json.details[0]?.message : undefined;
+    throw new ApiError(res.status, detail || json.message || 'Login failed');
   }
 
   const staff: StaffSession = {

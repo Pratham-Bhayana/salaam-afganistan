@@ -25,36 +25,40 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 8px;
   width: 100%;
+  box-sizing: border-box;
   background: #fff;
-  padding: 20px 12px;
+  padding: 16px 10px;
   margin: 0;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 .sidebar__logo {
-  height: 56px;
-  width: 56px;
+  height: 44px;
+  width: 44px;
+  min-width: 0;
+  flex-shrink: 1;
   object-fit: contain;
   border-radius: 50%;
 }
 
 .sidebar__logo--brand {
-  height: 44px;
+  height: 34px;
   width: auto;
-  max-width: 96px;
+  max-width: 68px;
   border-radius: 0;
 }
 
 .sidebar__logo--raizing {
-  height: 42px;
-  max-width: 120px;
+  height: 46px;
+  width: 48px;
+  border-radius: 0;
 }
 
 .sidebar__logo-divider {
   width: 1px;
-  height: 42px;
+  height: 34px;
   background: rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
