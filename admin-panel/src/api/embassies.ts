@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { API_BASE, apiFetch } from './client';
 import type { ApplicationStatus, ListMeta } from './applications';
 
 export type EmbassyContact = {
@@ -135,7 +135,6 @@ export type VisaTypeOption = {
 };
 
 async function listVisaTypesPublic(channel?: 'evisa' | 'embassy') {
-  const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
   const qs = new URLSearchParams();
   if (channel) qs.set('channel', channel);
   const res = await fetch(`${API_BASE}/api/v1/visa-types?${qs.toString()}`);

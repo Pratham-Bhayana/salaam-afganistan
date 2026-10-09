@@ -30,6 +30,8 @@ export function isNavItemVisible(
       return hasPermission(staff, 'embassy:setup');
     case 'chat':
       return hasPermission(staff, 'chat:access');
+    case 'contacts':
+      return hasPermission(staff, 'contacts:read');
     case 'fees':
     case 'templates':
       return hasPermission(staff, 'fees_content:manage');

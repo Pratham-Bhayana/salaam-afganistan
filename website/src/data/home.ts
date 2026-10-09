@@ -241,6 +241,6 @@ export const GENERAL_INFO: GeneralInfoContent = {
   ],
   externalLinks: [
     { label: "Raizing SIM", href: "https://raizingglobal.com" },
-    { label: "Travel Insurance", href: "https://www.bsrone.com" },
+    { label: "Travel Insurance", href: "https://bsrglobaldmcc.brokersnexus.com/" },
   ],
 };

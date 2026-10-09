@@ -14,6 +14,7 @@ import {
   Settings,
   ScrollText,
   Activity,
+  Mail,
   type LucideIcon,
 } from 'lucide-react';
 import { Modal } from './Modal';
@@ -40,6 +41,7 @@ const SECTION_ICONS: Record<SectionKey, LucideIcon> = {
   settings: Settings,
   audit: ScrollText,
   'embassy-activity': Activity,
+  contacts: Mail,
 };
 
 const TOTAL_SECTIONS = STAFF_SECTIONS.length;

@@ -1,4 +1,14 @@
-const API_BASE = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000').replace(/\/$/, '');
+function requireApiBase() {
+  const raw = import.meta.env.VITE_API_BASE_URL;
+  if (!raw || !String(raw).trim()) {
+    const message = 'VITE_API_BASE_URL is missing. Set it in admin-panel/.env';
+    console.error(message);
+    throw new Error(message);
+  }
+  return String(raw).replace(/\/$/, '');
+}
+
+export const API_BASE = requireApiBase();
 export const ADMIN_PREFIX = `${API_BASE}/api/v1/admin`;
 
 const ACCESS_KEY = 'salaam_admin_access';

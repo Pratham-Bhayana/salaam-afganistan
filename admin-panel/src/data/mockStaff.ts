@@ -13,7 +13,8 @@ export type SectionKey =
   | 'receptionist'
   | 'settings'
   | 'audit'
-  | 'embassy-activity';
+  | 'embassy-activity'
+  | 'contacts';
 
 export type StaffSection = {
   key: SectionKey;
@@ -47,6 +48,7 @@ export const STAFF_SECTIONS: StaffSection[] = [
   { key: 'settings', label: 'Settings' },
   { key: 'audit', label: 'Audit Logs' },
   { key: 'embassy-activity', label: 'Embassy Activity' },
+  { key: 'contacts', label: 'Contact' },
 ];
 
 export const STAFF_ROLES: StaffRole[] = ['Admin', 'Coordinator', 'Finance', 'Receptionist'];

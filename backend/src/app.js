@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 
 const publicRoutes = require('./routes/publicRoutes');
 const adminRoutes = require('./routes/admin');
@@ -42,6 +43,14 @@ app.get('/health', (req, res) => {
     service: 'salaam-afghanistan-backend',
     status: 'ok',
     timestamp: new Date().toISOString(),
+  });
+});
+
+app.get('/api/v1/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    db: mongoose.connection.name,
+    host: mongoose.connection.host,
   });
 });
 
